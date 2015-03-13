@@ -26,3 +26,7 @@
 *.exe
 *.out
 *.app
+
+docs/*
+dev/3dparty/*
+dev/*/build
