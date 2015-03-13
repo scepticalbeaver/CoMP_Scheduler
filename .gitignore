@@ -27,6 +27,9 @@
 *.out
 *.app
 
+Makefile
+*.pro.user
+
 docs/*
 dev/3dparty/*
 dev/*/build
