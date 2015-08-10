@@ -1,70 +1,224 @@
-/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+
+#include <chrono>
+#include <iostream>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
-#include "ns3/point-to-point-module.h"
+#include "ns3/mobility-module.h"
+#include "ns3/lte-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/config-store-module.h"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("FirstScriptExample");
+NS_LOG_COMPONENT_DEFINE ("Scene1_F2F_constantPos_wFading");
+
+void
+NotifyConnectionEstablishedUe (std::string context,
+                               uint64_t imsi,
+                               uint16_t cellid,
+                               uint16_t rnti)
+{
+  std::cout << context
+            << " UE IMSI " << imsi
+            << ": connected to CellId " << cellid
+            << " with RNTI " << rnti
+            << std::endl;
+}
+
+void
+NotifyConnectionEstablishedEnb (std::string context,
+                                uint64_t imsi,
+                                uint16_t cellid,
+                                uint16_t rnti)
+{
+  std::cout << context
+            << " eNB CellId " << cellid
+            << ": successful connection of UE with IMSI " << imsi
+            << " RNTI " << rnti
+            << std::endl;
+}
+
+
 
 int
-main (int argc, char *argv[])
+main ()
 {
-  Time::SetResolution (Time::NS);
-  LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
-  LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
+  // LogLevel logLevel = (LogLevel)(LOG_PREFIX_ALL | LOG_LEVEL_ALL);
 
-  NodeContainer nodes;
-  nodes.Create (2);
+  // LogComponentEnable ("LteHelper", logLevel);
+  // LogComponentEnable ("EpcHelper", logLevel);
+  // LogComponentEnable ("EpcEnbApplication", logLevel);
+  // LogComponentEnable ("EpcSgwPgwApplication", logLevel);
 
-  PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  // LogComponentEnable ("LteEnbRrc", logLevel);
+  // LogComponentEnable ("LteEnbNetDevice", logLevel);
+  // LogComponentEnable ("LteUeRrc", logLevel);
+  // LogComponentEnable ("LteUeNetDevice", logLevel);
 
-  NetDeviceContainer devices;
-  devices = pointToPoint.Install (nodes);
 
-  InternetStackHelper stack;
-  stack.Install (nodes);
+  /*
+    Network topology:
+   0--------------------------------------------------------------------------------> X
+   |
+   x..............d..........+..............d..........x
+   eNB1                     UE1,2                     eNB2
+   |
+   |
+   */
 
-  Ipv4AddressHelper address;
-  address.SetBase ("10.1.1.0", "255.255.255.0");
+  uint16_t numberOfUes = 2;
+  uint16_t numberOfEnbs = 2;
+  double distance = 500.0; // m
+  double zValue = 1.5;
+  double enbTxPowerDbm = 46.0;
+  double simTime = 5;
+  bool doGenerateRem = false;
 
-  Ipv4InterfaceContainer interfaces = address.Assign (devices);
+  //---------------------------------------------------------------------
+  // Lte configuration
+  //---------------------------------------------------------------------
 
-  UdpEchoServerHelper echoServer (9);
+  Config::SetDefault ("ns3::LteHelper::UseIdealRrc", BooleanValue (true)); // ?
 
-  ApplicationContainer serverApps = echoServer.Install (nodes.Get (1));
-  serverApps.Start (Seconds (1.0));
-  serverApps.Stop (Seconds (10.0));
 
-  UdpEchoClientHelper echoClient (interfaces.GetAddress (1), 9);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
-  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+  Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
 
-  ApplicationContainer clientApps = echoClient.Install (nodes.Get (0));
-  clientApps.Start (Seconds (2.0));
-  clientApps.Stop (Seconds (10.0));
+  lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisSpectrumPropagationLossModel"));
+
+  lteHelper->SetSchedulerType ("ns3::FdMtFfMacScheduler");
+  lteHelper->SetSchedulerAttribute("CqiTimerThreshold", UintegerValue (100));
+
+  lteHelper->SetHandoverAlgorithmType ("ns3::NoOpHandoverAlgorithm");
+
+  /*
+  lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); // in number of RBs, 25
+  lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (bandwidth));
+
+  lteHelper->SetEnbDeviceAttribute ("DlEarfcn", UintegerValue (macroEnbDlEarfcn)); //100
+  lteHelper->SetEnbDeviceAttribute ("UlEarfcn", UintegerValue (macroEnbDlEarfcn + 18000));
+  lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (macroEnbBandwidth));
+  lteHelper->SetEnbDeviceAttribute ("UlBandwidth", UintegerValue (macroEnbBandwidth));
+  */
+
+  //   lteHelper->EnableLogComponents ();
+  //   LogComponentEnable ("PfFfMacScheduler", LOG_LEVEL_ALL);
+
+
+  //---------------------------------------------------------------------
+  // Mobility model configuration
+  //---------------------------------------------------------------------
+
+
+  NodeContainer ueNodes;
+  NodeContainer enbNodes;
+  enbNodes.Create (numberOfEnbs);
+  ueNodes.Create (numberOfUes);
+
+  // Install Mobility Model in eNB
+  Ptr<ListPositionAllocator> positionAllocator = CreateObject<ListPositionAllocator> ();
+  positionAllocator->Add(Vector (0.0         , 0.0, zValue)); // eNB1
+  positionAllocator->Add(Vector (2 * distance, 0.0, zValue)); // eNB2
+  positionAllocator->Add(Vector (distance    , 0.0, zValue)); // ue1
+  positionAllocator->Add(Vector (distance    , 0.0, zValue)); // ue2
+
+
+  MobilityHelper mobility;
+  mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  mobility.SetPositionAllocator(positionAllocator);
+  mobility.Install(enbNodes);
+  mobility.Install(ueNodes);
+
+
+  //---------------------------------------------------------------------
+  // Lte net devices configuration
+  //---------------------------------------------------------------------
+
+  // Install LTE Devices in eNB and UEs
+  Config::SetDefault ("ns3::LteEnbPhy::TxPower", DoubleValue (enbTxPowerDbm));
+  NetDeviceContainer enbLteDevs = lteHelper->InstallEnbDevice (enbNodes);
+  NetDeviceContainer ueLteDevs = lteHelper->InstallUeDevice (ueNodes);
+
+
+  // Install the IP stack on the UEs
+  InternetStackHelper internet;
+  internet.Install (ueNodes);
+
+  lteHelper->Attach(ueLteDevs.Get(0), enbLteDevs.Get(0));
+  lteHelper->Attach(ueLteDevs.Get(1), enbLteDevs.Get(1));
+
+  //---------------------------------------------------------------------
+  // Applications setup
+  //---------------------------------------------------------------------
+
+  NS_LOG_LOGIC ("setting up applications");
+
+  enum EpsBearer::Qci q = EpsBearer::GBR_CONV_VOICE;
+  EpsBearer bearer (q);
+  lteHelper->ActivateDataRadioBearer (ueLteDevs, bearer); // activates saturation traffic generator
+
+  // Add X2 inteface
+  //lteHelper->AddX2Interface (enbNodes); // why?
+
+
+
+  //---------------------------------------------------------------------
+  // Traces configuration
+  //---------------------------------------------------------------------
+
+
+  // Uncomment to enable PCAP tracing
+  //  p2ph.EnablePcapAll("pcap");
+
+  lteHelper->EnableTraces(); // EnablePhyTraces, Mac, Rlc, Pdcp
+
+  Ptr<RadioBearerStatsCalculator> rlcStats = lteHelper->GetRlcStats ();
+  rlcStats->SetAttribute ("StartTime", TimeValue (Seconds (0.110)));
+  rlcStats->SetAttribute ("EpochDuration", TimeValue (Seconds (1.0)));
+
+  Ptr<RadioBearerStatsCalculator> pdcpStats = lteHelper->GetPdcpStats ();
+  pdcpStats->SetAttribute ("StartTime", TimeValue (Seconds (0.110)));
+  pdcpStats->SetAttribute ("EpochDuration", TimeValue (Seconds (1.0)));
+
+  // connect custom trace sinks for RRC connection establishment and handover notification
+  //  Config::Connect ("/NodeList/*/DeviceList/*/LteEnbRrc/ConnectionEstablished",
+  //                   MakeCallback (&NotifyConnectionEstablishedEnb));
+  //  Config::Connect ("/NodeList/*/DeviceList/*/LteUeRrc/ConnectionEstablished",
+  //                   MakeCallback (&NotifyConnectionEstablishedUe));
+
+  Ptr<RadioEnvironmentMapHelper> remHelper;
+  if (doGenerateRem)
+    {
+      remHelper = CreateObject<RadioEnvironmentMapHelper> ();
+      remHelper->SetAttribute ("ChannelPath", StringValue ("/ChannelList/0"));
+      remHelper->SetAttribute ("OutputFile", StringValue ("scene1.rem"));
+      remHelper->SetAttribute ("XMin", DoubleValue (-distance / 2));
+      remHelper->SetAttribute ("XMax", DoubleValue (2.5 * distance));
+      remHelper->SetAttribute ("YMin", DoubleValue (-distance / 2));
+      remHelper->SetAttribute ("YMax", DoubleValue (distance / 2));
+      remHelper->SetAttribute ("Z", DoubleValue (zValue));
+
+      remHelper->Install ();
+      // simulation will stop right after the REM has been generated
+    }
+  else
+    {
+      Simulator::Stop (Seconds(simTime));
+    }
+
+  auto startTime = std::chrono::high_resolution_clock::now();
 
   Simulator::Run ();
+
+  // GtkConfigStore config;
+  // config.ConfigureAttributes ();
   Simulator::Destroy ();
+
+  auto stopTime = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::seconds> (stopTime - startTime).count();
+  std::cerr << "Simulation time:\t" << duration << std::endl;
   return 0;
+
 }

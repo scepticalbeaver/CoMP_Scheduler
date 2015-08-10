@@ -7,7 +7,7 @@ CONFIG -= qt
 
 QMAKE_CXXFLAGS += -std=c++11
 
-NS_BUILD_DIR = $$PWD/../3dparty/ns-3-allinone/ns-3.22/build
+NS_BUILD_DIR = $$PWD/../3dparty/ns-3-allinone/ns-3.23/build
 
 LIBS += -L$$NS_BUILD_DIR
 INCLUDEPATH += $$NS_BUILD_DIR
@@ -42,10 +42,9 @@ DESTDIR = $$PWD/build/$$CONFIGURATION/bin/
 DEFINES += NS3_LOG_ENABLE
 DEFINES += NS3_ASSERT_ENABLE
 
-include(deployment.pri)
-qtcAddDeployment()
-
 SOURCES += \
-    main.cpp \
+    main.cpp
+
+
 
 
