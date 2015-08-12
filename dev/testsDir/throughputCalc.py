@@ -24,10 +24,10 @@ for i in range(dlRlcKPIs.shape[0]):
 totalDuration = dlRlcKPIs[-1, 1] - dlRlcKPIs[0 , 0]
 
 print "DlThroughput [Kbps]:"
-print "ueId\tmax\t\taverage"
+print "ueId    max         average"
 for i in range(3):
 	aveThroughput = toThroughputKbps(totalBytesRx[i], totalDuration)
-	print "{0:4}{1:12}{2:16}".format(i + 1, maxThroughput[i], aveThroughput)
+	print "{0:<8}{1:<12}{2:<16}".format(i + 1, maxThroughput[i], aveThroughput)
 
 
 
