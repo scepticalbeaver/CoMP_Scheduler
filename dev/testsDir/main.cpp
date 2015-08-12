@@ -1,37 +1,4 @@
-#include <chrono>
-#include <iostream>
-
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/mobility-module.h"
-#include "ns3/lte-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/config-store-module.h"
-
-using namespace ns3;
-
-NS_LOG_COMPONENT_DEFINE ("Scene1_F2F_constantPos_wFading");
-
-void
-NotifyConnectionEstablishedEnb (std::string context,
-                                uint64_t imsi,
-                                uint16_t cellid,
-                                uint16_t rnti)
-{
-  std::cout << context
-            << " eNB CellId " << cellid
-            << ": successful connection of UE with IMSI " << imsi
-            << std::endl;
-}
-
-void
-RecvMeasurementReportCallback (std::string context, uint64_t imsi, uint16_t cellId, uint16_t rnti,
-                               LteRrcSap::MeasurementReport measReport)
-{
-  std::cout << "ue# " << imsi << "\tend# " << cellId << "\t rsrp: " << (int)measReport.measResults.rsrpResult << "\n";
-}
+#include "helpers.h"
 
 
 
@@ -67,12 +34,12 @@ main ()
   double distance = 500.0; // m
   double ueZValue = 1.5;
 
-  double ueSpeed = 0.833; // 3 kmph in mps
+  double ueSpeed = 0.9; // ~3.2 kmph in mps
   //Vector ueStartPos(0.0, -2.0,  ueZValue);
   Vector ueStartPos(700.0, -4.0,  ueZValue);
   Vector ueVelocity(0.0, ueSpeed, 0.0);
 
-  double simTime = 5;
+  double simTime = 10;
 
   double enbTxPowerDbm = 43.0;
   bool doGenerateRem = false;
@@ -102,7 +69,7 @@ main ()
 
 
   lteHelper->SetSchedulerType ("ns3::FdMtFfMacScheduler");
-  lteHelper->SetSchedulerAttribute("CqiTimerThreshold", UintegerValue (100));
+  lteHelper->SetSchedulerAttribute("CqiTimerThreshold", UintegerValue (20));
 
   lteHelper->SetHandoverAlgorithmType ("ns3::NoOpHandoverAlgorithm");
 
@@ -224,25 +191,30 @@ main ()
   //---------------------------------------------------------------------
 
 //  LteRrcSap::ReportConfigEutra config;
-//  config.eventId = LteRrcSap::ReportConfigEutra::EVENT_A1;
+//  config.eventId = LteRrcSap::ReportConfigEutra::EVENT_A2;
 //  config.threshold1.choice = LteRrcSap::ThresholdEutra::THRESHOLD_RSRP;
-//  config.threshold1.range = 0;
+//  config.threshold1.range = 97;
 //  config.triggerQuantity = LteRrcSap::ReportConfigEutra::RSRP;
-//  config.reportInterval = LteRrcSap::ReportConfigEutra::MS480;
+//  config.reportInterval = LteRrcSap::ReportConfigEutra::MS120;
+//  config.maxReportCells = 5;
+//  config.timeToTrigger = 0;
 //  std::vector<uint8_t> measIdList;
 
-//  NetDeviceContainer::Iterator it;
-//  for (it = enbLteDevs.Begin (); it != enbLteDevs.End (); it++)
-//    {
-//      Ptr<NetDevice> dev = *it;
-//      Ptr<LteEnbNetDevice> enbDev = dev->GetObject<LteEnbNetDevice> ();
-//      Ptr<LteEnbRrc> enbRrc = enbDev->GetRrc ();
+  NetDeviceContainer::Iterator it;
+  for (it = enbLteDevs.Begin (); it != enbLteDevs.End (); it++)
+    {
+      Ptr<NetDevice> dev = *it;
+      Ptr<LteEnbNetDevice> enbDev = dev->GetObject<LteEnbNetDevice> ();
+      Ptr<LteEnbRrc> enbRrc = enbDev->GetRrc ();
 //      uint8_t measId = enbRrc->AddUeMeasReportConfig (config);
 //      measIdList.push_back (measId); // remember the measId created
-//      enbRrc->TraceConnect ("RecvMeasurementReport",
-//                            "context",
-//                            MakeCallback (&RecvMeasurementReportCallback));
-//    }
+      enbRrc->TraceConnect ("RecvMeasurementReport",
+                            "MyContext",
+                            MakeCallback (&RecvMeasurementReportCallback));
+    }
+
+  measurementSink.open("measurements.log", std::ios_base::out | std::ios_base::trunc);
+  measurementSink << "% time[usec]\tsrcCellId\ttargetCellId\tRSRP\n";
 
   //---------------------------------------------------------------------
   // Traces configuration
@@ -258,7 +230,7 @@ main ()
   lteHelper->EnableRlcTraces();
 
   Ptr<RadioBearerStatsCalculator> rlcStats = lteHelper->GetRlcStats ();
-  rlcStats->SetAttribute ("StartTime", TimeValue (Seconds (0.150)));
+  rlcStats->SetAttribute ("StartTime", TimeValue (MilliSeconds(20)));
   rlcStats->SetAttribute ("EpochDuration", TimeValue (MilliSeconds(500.0)));
 
 
@@ -269,6 +241,9 @@ main ()
   Ptr<RadioEnvironmentMapHelper> remHelper;
   if (doGenerateRem)
     {
+      PrintGnuplottableEnbListToFile ("enbs.txt");
+      PrintGnuplottableUeListToFile ("ues.txt");
+
       double left = -distance / 3;
       double right = 2 * distance + (-1) * left;
       // 4:3
@@ -304,7 +279,11 @@ main ()
 
   auto stopTime = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::seconds> (stopTime - startTime).count();
-  std::cerr << "Simulation time:\t" << duration << std::endl;
+  std::cerr << "Simulation time:\t" << duration << " [s]" << std::endl;
+
+  measurementSink.flush();
+  measurementSink.close();
+
   return 0;
 
 }

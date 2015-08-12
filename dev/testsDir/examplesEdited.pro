@@ -8,9 +8,12 @@ CONFIG -= qt
 QMAKE_CXXFLAGS += -std=c++11
 
 NS_BUILD_DIR = $$PWD/../3dparty/ns-3-allinone/ns-3.23/build
+NS_HEADERS_DIR = $$PWD/../3dparty/ns-3-allinone/ns-3.23/build/ns3
 
 LIBS += -L$$NS_BUILD_DIR
 INCLUDEPATH += $$NS_BUILD_DIR
+#INCLUDEPATH += $$NS_HEADERS_DIR
+
 win32 {
     SHARED_LIB_FILES = $$files($$NS_BUILD_DIR/*.dll)
     for(FILE, SHARED_LIB_FILES) {
@@ -44,6 +47,9 @@ DEFINES += NS3_ASSERT_ENABLE
 
 SOURCES += \
     main.cpp
+
+HEADERS += \
+    helpers.h
 
 
 

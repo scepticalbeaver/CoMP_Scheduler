@@ -31,5 +31,5 @@ Makefile
 *.pro.user
 
 docs/*
-dev/3dparty/*
+dev/3dparty/ns-3*
 dev/*/build
