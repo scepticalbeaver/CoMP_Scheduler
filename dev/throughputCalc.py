@@ -11,7 +11,7 @@ def toThroughputKbps(bytes, seconds):
 #-------------------------------------------------------------------------------
 #  RLC
 #-------------------------------------------------------------------------------
-def processRlcStats(filename):
+def processRlcStats(filename, start_time):
 	dlRlcKPIs = np.loadtxt(filename, comments = '%')
 	# rows: 0start 1end 2CellId 3IMSI 4RNTI 5LCID 6nTxPDUs 7TxBytes 8nRxPDUs 9RxBytes delay stdDev min max PduSize stdDev min max
 
@@ -22,6 +22,9 @@ def processRlcStats(filename):
 	timestep = dlRlcKPIs[0, 1] - dlRlcKPIs[0, 0]
 
 	for i in range(dlRlcKPIs.shape[0]):
+		time = dlRlcKPIs[i, 0]
+		if time < start_time:
+			continue
 		ueId = np.uint32(dlRlcKPIs[i, 3]) - 1
 		rxBytes = dlRlcKPIs[i, 9]
 		totalBytesRx[ueId] += rxBytes
@@ -38,7 +41,7 @@ def processRlcStats(filename):
 #-------------------------------------------------------------------------------
 #  MAC
 #-------------------------------------------------------------------------------
-def processMacStats(filename):
+def processMacStats(filename, start_time):
 	epochDuration = .500
 	dlMacKPIs = np.loadtxt(filename, comments = '%')
 
@@ -52,6 +55,8 @@ def processMacStats(filename):
 
 	for i in range(dlMacKPIs.shape[0]):
 		time = dlMacKPIs[i, 0]
+		if time < start_time:
+			continue
 		ueId = np.uint32(dlMacKPIs[i, 2]) - 1
 		mcs = np.uint32(dlMacKPIs[i, 6])
 		totalBytesRx[ueId] += dlMacKPIs[i, 7]
@@ -76,13 +81,23 @@ def processMacStats(filename):
 		print "{0:<8}{1:<12}".format(i + 1, totalBytesRx[i] / 1024 / 1024)
 	print ""
 
+def is_float(value):
+  try:
+    float(value)
+    return True
+  except ValueError:
+    return False
+
 def usage():
 	print "File name must contain words mac or rlc to process them appropriate\n"
-	print "Usage:"
-	print "throughputCalc.py DlRlcStats.txt\nthroughputCalc.py ./some_directory/DlMacStats.txt\n"
+	print "Usage:  throughputCalc.py filepath [start time in same resolution as in file]"
+	print "Examples:"
+	print "throughputCalc.py DlRlcStats.txt" 
+	print "throughputCalc.py ./some_directory/DlMacStats.txt 0.11\n"
 
 def main():
-	if len(sys.argv) < 2:
+	argc = len(sys.argv)
+	if argc < 2:
 		usage()
 		return
 
@@ -92,13 +107,16 @@ def main():
 	is_mac_stats = re.search("mac", filename, re.IGNORECASE)
 	is_rlc_stats = re.search("rlc", filename, re.IGNORECASE)
 
-	if (is_mac_stats and is_rlc_stats) or (not is_mac_stats and not is_rlc_stats):
+	if len(filename) == 0 or (is_mac_stats and is_rlc_stats) or (not is_mac_stats and not is_rlc_stats):
 		usage()
 		return;
 
+	start_time = float(sys.argv[2]) if argc > 2 and is_float(sys.argv[2]) else float("-NaN")
+
+
 	if is_mac_stats:
-		processMacStats(full_path)
+		processMacStats(full_path, start_time)
 	else:
-		processRlcStats(full_path)
+		processRlcStats(full_path, start_time)
 
 main()
