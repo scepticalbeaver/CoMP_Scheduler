@@ -10,8 +10,8 @@
 class FfMacScheduler
 {
 public:
-  FfMacScheduler(int cellId, bool isLeader);
-  void setLeader(bool isLeader);
+  FfMacScheduler(int cellId);
+  void setLeader(int cellId);
   void setFfMacSchedSapUser(FfMacSchedSapUser *user);
 
   void setTrafficActivity(bool mustSend);
@@ -25,6 +25,7 @@ private:
   bool mIsDirectParticipant;
   Time mWindowDuration;
   int mDirectParticipantCellId;
+  int mLeaderCellId;
 
   Time mTxTrafficUntil = Converter::milliseconds(0);
   Time mTxTrafficAfter = Converter::milliseconds(0);

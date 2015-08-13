@@ -125,7 +125,8 @@ void Simulator::destroy()
 
 void Simulator::run()
 {
-  LOG("\nSimulation has been started...\n");
+  LOG("\n\tSimulation has been started...\n");
+  mL2MacFlat.activateDlCompFeature();
   const std::string fname = "run";
   mTimeMeasurement.start(fname);
 

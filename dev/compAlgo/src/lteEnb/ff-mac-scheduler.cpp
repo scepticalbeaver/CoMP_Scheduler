@@ -2,18 +2,35 @@
 #include "x2-channel.h"
 #include "../simulator.h"
 
-FfMacScheduler::FfMacScheduler(int cellId, bool isLeader)
+FfMacScheduler::FfMacScheduler(int cellId)
   : mCellId(cellId)
-  , mIsLeader(isLeader)
-  , mIsDirectParticipant(isLeader)
+  , mIsLeader(false)
+  , mIsDirectParticipant(false)
   , mWindowDuration(Converter::milliseconds(500))
+  , mDirectParticipantCellId(-1)
+  , mLeaderCellId(-1)
 {
-  mDirectParticipantCellId = (isLeader)? cellId : -1;
 }
 
-void FfMacScheduler::setLeader(bool isLeader)
+void FfMacScheduler::setLeader(int cellId)
 {
-  mIsLeader = isLeader;
+  mLeaderCellId = cellId;
+
+  if (mIsLeader == (mCellId == cellId))
+    return;
+
+  mIsLeader = mCellId == cellId;
+
+  if (mIsLeader)
+    {
+      mIsDirectParticipant = true;
+      mDirectParticipantCellId = mCellId;
+
+      X2Message message;
+      message.type = X2Message::leadershipInd;
+      message.leaderCellId = mCellId;
+      X2Channel::instance()->send(-1, message);
+    }
 }
 
 void FfMacScheduler::setFfMacSchedSapUser(FfMacSchedSapUser *user)
@@ -47,9 +64,8 @@ void FfMacScheduler::schedDlTriggerReq()
 
 void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
 {
-  if (!mIsLeader)
+  if (!mIsLeader && mLeaderCellId != -1)
     {
-
       CSIMeasurementReport measReport;
       measReport.csi = csi;
       measReport.targetCellId = tCellId;
@@ -58,7 +74,7 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
       msg.type = X2Message::measuresInd;
       msg.report = measReport;
 
-      X2Channel::instance()->send(tCellId, msg);
+      X2Channel::instance()->send(mLeaderCellId, msg);
       return;
     }
 
@@ -86,7 +102,7 @@ void FfMacScheduler::switchDirectCell(int cellId)
     {
       // not this cell
       X2Message msg;
-      msg.type = X2Message::changeScheduleMode;
+      msg.type = X2Message::changeScheduleModeInd;
       msg.mustSendTraffic = false;
 
       X2Channel::instance()->send(mDirectParticipantCellId, msg);
@@ -104,7 +120,7 @@ void FfMacScheduler::switchDirectCell(int cellId)
     {
       // not this cell
       X2Message msgOn;
-      msgOn.type = X2Message::changeScheduleMode;
+      msgOn.type = X2Message::changeScheduleModeInd;
       msgOn.mustSendTraffic = true;
 
       X2Channel::instance()->send(cellId, msgOn);

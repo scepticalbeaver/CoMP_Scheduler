@@ -4,10 +4,11 @@
 
 L2Mac::L2Mac()
 {
+  X2Channel::instance()->configurate(compMembersCount);
   mMacSapUser = new FfMacSchedSapUser;
   for (int i = 0; i < compMembersCount; i++)
     {
-      mSchedulers.push_back(FfMacScheduler(i + 1, i == 0));
+      mSchedulers.push_back(FfMacScheduler(i + 1));
       mSchedulers.back().setFfMacSchedSapUser(mMacSapUser);
     }
 
@@ -23,6 +24,11 @@ L2Mac::~L2Mac()
   mResultMacStats.close();
 
   printMacTimings();
+}
+
+void L2Mac::activateDlCompFeature()
+{
+  mSchedulers.front().setLeader(true);
 }
 
 void L2Mac::makeScheduleDecision(int cellId, const DlMacPacket &packet)
@@ -54,7 +60,7 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
 {
   switch (message.type)
     {
-    case X2Message::changeScheduleMode:
+    case X2Message::changeScheduleModeInd:
       {
         mSchedulers[cellId].setTrafficActivity(message.mustSendTraffic);
         break;
@@ -64,7 +70,11 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
         recvMeasurementsReport(cellId, message.report);
         break;
       }
-
+    case X2Message::leadershipInd:
+      {
+        mSchedulers[cellId].setLeader(message.leaderCellId);
+        break;
+      }
     }
 }
 

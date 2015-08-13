@@ -17,6 +17,11 @@ void X2Channel::destroy()
   mInstance = nullptr;
 }
 
+void X2Channel::configurate(int compGroupSize)
+{
+  mCompGroupSize = compGroupSize;
+}
+
 Time X2Channel::getLatency() const
 {
   return delay;
@@ -24,9 +29,20 @@ Time X2Channel::getLatency() const
 
 void X2Channel::send(int tCellId, X2Message msg)
 {
-  Event msgEvent(EventType::x2Message, Simulator::instance()->getTime() + getLatency());
-  msgEvent.cellId = tCellId;
-  msgEvent.message = msg;
-  Simulator::instance()->scheduleEvent(msgEvent);
+  int beginMulticastId = tCellId;
+  int endMulticastId = beginMulticastId + 1;
+  if (tCellId == -1)
+    {
+      beginMulticastId = 1;
+      endMulticastId = mCompGroupSize + 1;
+    }
+
+  for (int i = beginMulticastId; i < endMulticastId; i++)
+    {
+      Event msgEvent(EventType::x2Message, Simulator::instance()->getTime() + getLatency());
+      msgEvent.cellId = i;
+      msgEvent.message = msg;
+      Simulator::instance()->scheduleEvent(msgEvent);
+    }
 }
 
