@@ -29,6 +29,7 @@
 
 Makefile
 *.pro.user
+*.autosave
 
 docs/*
 dev/3dparty/ns-3*
