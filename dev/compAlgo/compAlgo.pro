@@ -19,13 +19,16 @@ DESTDIR = $$PWD/build/$$CONFIGURATION/bin/
 SOURCES += src/main.cpp \
     src/simulator.cpp \
     src/lteEnb/l2-mac.cpp \
-    src/lteEnb/x2-channel.cpp
+    src/lteEnb/x2-channel.cpp \
+    src/lteEnb/ff-mac-scheduler.cpp
 
 HEADERS += \
+    src/helpers.h \
     src/simulator.h \
     src/eventQueue.h \
     src/lteEnb/l2-mac.h \
     src/lteEnb/x2-channel.h \
-    src/helpers.h
+    src/lteEnb/ff-mac-scheduler.h \
+    src/lteEnb/ff-mac-sched-sap.h
 
 

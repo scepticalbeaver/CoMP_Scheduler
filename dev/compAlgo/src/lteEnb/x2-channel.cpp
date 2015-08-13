@@ -4,10 +4,6 @@
 
 X2Channel* X2Channel::mInstance = nullptr;
 
-X2Channel::X2Channel()
-{
-}
-
 X2Channel *X2Channel::instance()
 {
   if (!mInstance)
@@ -21,14 +17,14 @@ void X2Channel::destroy()
   mInstance = nullptr;
 }
 
-uint64_t X2Channel::delay() const
+Time X2Channel::getLatency() const
 {
   return delay;
 }
 
 void X2Channel::send(int tCellId, X2Message msg)
 {
-  Event msgEvent(EventType::x2Message, Simulator::instance()->getTime() + delay);
+  Event msgEvent(EventType::x2Message, Simulator::instance()->getTime() + getLatency());
   msgEvent.cellId = tCellId;
   msgEvent.message = msg;
   Simulator::instance()->scheduleEvent(msgEvent);

@@ -1,26 +1,26 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
-struct DlMacPacket
-{
-  std::string dlMacStatLine;
-};
-
-struct CSIMeasurementReport
-{
-  int targetCellId;
-  int rsrp;
-};
+#include "x2-channel.h"
+#include "ff-mac-scheduler.h"
 
 class L2Mac
 {
 public:
   L2Mac();
+  ~L2Mac();
 
-  void makeScheduleDecision(DlMacPacket packet);
-  void recvMeasurementsReport(CSIMeasurementReport report);
+  void makeScheduleDecision(int cellId, DlMacPacket packet);
+  void recvMeasurementsReport(int cellId, CSIMeasurementReport report);
+  void recvX2Message(int cellId, X2Message message);
 
+
+private:
+  FfMacSchedSapUser *mMacSapUser;
+
+  std::vector<FfMacScheduler> mShedulers;
 
 };
 

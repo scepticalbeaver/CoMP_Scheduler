@@ -25,7 +25,7 @@ Simulator::Simulator()
 
 void Simulator::parseMacTraffic()
 {
-  std::clog << "log: start parsing mac traffic..." << std::endl;
+  LOG("start parsing mac traffic...");
   std::string location = "../../../input/DlMacStats.txt";
   std::fstream macStats;
   macStats.open(location, std::ios_base::in);
@@ -38,7 +38,7 @@ void Simulator::parseMacTraffic()
     {
       if (line.size() < 15)
         {
-          std::cerr << "warn: drop line: " << line << "\n";
+          WARN("drop line: " << line);
           continue;
         }
 
@@ -59,12 +59,12 @@ void Simulator::parseMacTraffic()
       mEventQueue.push(event);
     }
 
-  std::clog << "log: parsing mac traffic done" << std::endl;
+  LOG("parsing mac traffic done");
 }
 
 void Simulator::parseMeasurements()
 {
-  std::clog << "log: start parsing measurements..." << std::endl;
+  LOG("start parsing measurements...");
   std::string location = "../../../input/measurements.log";
   std::fstream measurements;
   measurements.open(location, std::ios_base::in);
@@ -77,7 +77,7 @@ void Simulator::parseMeasurements()
     {
       if (line.size() < 7)
         {
-          std::cerr << "warn: drop line: \"" << line << "\"\n";
+          WARN("warn: drop line: \"" << line << "\"");
           continue;
         }
 
@@ -89,7 +89,7 @@ void Simulator::parseMeasurements()
 
       CSIMeasurementReport report;
       report.targetCellId = tCellId;
-      report.rsrp = rsrp;
+      report.csi = std::make_pair(timeUSec, rsrp);
 
       Event event(EventType::csiIndicator, timeUSec);
       event.cellId = sCellId;
@@ -98,12 +98,17 @@ void Simulator::parseMeasurements()
       mEventQueue.push(event);
     }
 
-  std::clog << "log: measurements parsing done" << std::endl;
+  LOG("measurements parsing done");
+}
+
+void Simulator::postProcessing()
+{
+  LOG("Stop event was reached\n" << "\tStill scheduled in queue " << mEventQueue.size() << " events");
 }
 
 Simulator::~Simulator()
 {
-
+  X2Channel::destroy();
 }
 
 void Simulator::destroy()
@@ -114,10 +119,37 @@ void Simulator::destroy()
 
 void Simulator::run()
 {
-
+  while (!mEventQueue.empty())
+    {
+      Event event = mEventQueue.top();
+      mEventQueue.pop();
+      switch(event.eventType)
+        {
+          case EventType::stopSimulation:
+          {
+            postProcessing();
+            return;
+          }
+        case EventType::x2Message:
+          {
+            mL2MacFlat.recvX2Message(event.cellId, event.message);
+            break;
+          }
+        case EventType::csiIndicator:
+          {
+            mL2MacFlat.recvMeasurementsReport(event.cellId, event.report);
+            break;
+          }
+        case EventType::scheduleAttempt:
+          {
+            mL2MacFlat.makeScheduleDecision(event.cellId, event.packet);
+            break;
+          }
+        }
+    }
 }
 
-void Simulator::scheduleEvent(Event &event)
+void Simulator::scheduleEvent(Event event)
 {
   assert(event.atTime >= mCurrentTime);
   mEventQueue.push(event);

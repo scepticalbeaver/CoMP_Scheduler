@@ -19,20 +19,19 @@ struct X2Message
 class X2Channel
 {
 public:
-  X2Channel* instance();
-  void destroy();
+  static X2Channel* instance();
+  static void destroy();
 
-  uint64_t delay() const;
+  Time getLatency() const;
 
   void send(int tCellId, X2Message msg);
 
 
 private:
-  const uint64_t delay = Converter::milliseconds(2);
+  const Time delay = Converter::milliseconds(2);
 
   static X2Channel* mInstance;
 
-  X2Channel();
-  ~X2Channel();
+  X2Channel() = default;
 };
 

@@ -4,6 +4,10 @@
 int main()
 {
   Simulator::instance();
+
+  Simulator::instance()->run();
+
+
   Simulator::destroy();
 
   return 0;
