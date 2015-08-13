@@ -12,11 +12,11 @@ class FfMacScheduler
 public:
   FfMacScheduler(int cellId, bool isLeader);
   void setLeader(bool isLeader);
-
-  void setTrafficActivity(bool mustSend);
   void setFfMacSchedSapUser(FfMacSchedSapUser *user);
 
-  void schedDlTriggerReq(Time vendorSpecificList);
+  void setTrafficActivity(bool mustSend);
+
+  void schedDlTriggerReq();
   void schedDlCqiInfoReq(int tCellId, CsiUnit csi);
 
 private:

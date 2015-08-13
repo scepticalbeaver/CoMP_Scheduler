@@ -16,6 +16,11 @@ void FfMacScheduler::setLeader(bool isLeader)
   mIsLeader = isLeader;
 }
 
+void FfMacScheduler::setFfMacSchedSapUser(FfMacSchedSapUser *user)
+{
+  mMacSapUser = user;
+}
+
 void FfMacScheduler::setTrafficActivity(bool mustSend)
 {
   mIsDirectParticipant = mustSend;
@@ -31,9 +36,13 @@ void FfMacScheduler::setTrafficActivity(bool mustSend)
     }
 }
 
-void FfMacScheduler::schedDlTriggerReq(Time vendorSpecificList)
+void FfMacScheduler::schedDlTriggerReq()
 {
+  Time currentTime = Simulator::instance()->getTime();
+  bool canAlreadyTx = mIsDirectParticipant && currentTime > mTxTrafficAfter;
+  bool canStillTx = !mIsDirectParticipant && currentTime < mTxTrafficUntil;
 
+  mMacSapUser->schedDlConfigInd({canAlreadyTx || canStillTx});
 }
 
 void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
@@ -66,6 +75,8 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
   array.push_back(csi);
   if (array.back().first - array.front().first > mWindowDuration)
     array.pop_front();
+
+  // todo: make something cool algo here
 }
 
 void FfMacScheduler::switchDirectCell(int cellId)

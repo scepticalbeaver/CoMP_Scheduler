@@ -20,7 +20,7 @@ Simulator::Simulator()
   parseMacTraffic();
   parseMeasurements();
 
-  scheduleEvent(Event(EventType::stopSimulation, stopTime));
+  scheduleEvent(Event(EventType::stopSimulation, mStopTime + Converter::milliseconds(100)));
 }
 
 void Simulator::parseMacTraffic()
@@ -56,6 +56,8 @@ void Simulator::parseMacTraffic()
       event.cellId = cellId;
       event.packet = packet;
 
+      if (event.atTime > mStopTime)
+        mStopTime = event.atTime;
       mEventQueue.push(event);
     }
 
@@ -95,6 +97,8 @@ void Simulator::parseMeasurements()
       event.cellId = sCellId;
       event.report = report;
 
+      if (event.atTime > mStopTime)
+        mStopTime = event.atTime;
       mEventQueue.push(event);
     }
 
@@ -109,6 +113,8 @@ void Simulator::postProcessing()
 Simulator::~Simulator()
 {
   X2Channel::destroy();
+
+  LOG("Simulation time: " << (mTimeMeasurement.average("run") / 1000 / 1000) << " [s]\n");
 }
 
 void Simulator::destroy()
@@ -119,15 +125,22 @@ void Simulator::destroy()
 
 void Simulator::run()
 {
+  LOG("\nSimulation has been started...\n");
+  const std::string fname = "run";
+  mTimeMeasurement.start(fname);
+
+  int processedEvents = 0;
   while (!mEventQueue.empty())
     {
       Event event = mEventQueue.top();
       mEventQueue.pop();
+      mCurrentTime = event.atTime;
       switch(event.eventType)
         {
           case EventType::stopSimulation:
           {
             postProcessing();
+            mTimeMeasurement.stop(fname);
             return;
           }
         case EventType::x2Message:
@@ -145,6 +158,13 @@ void Simulator::run()
             mL2MacFlat.makeScheduleDecision(event.cellId, event.packet);
             break;
           }
+        }
+
+      ++processedEvents;
+      if (processedEvents % (100 * 1000) == 0)
+        {
+          LOG("\tevents remaining:\t" << mEventQueue.size());
+          processedEvents = 0;
         }
     }
 }

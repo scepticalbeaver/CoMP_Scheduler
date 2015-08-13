@@ -17,9 +17,10 @@ public:
 private:
   static Simulator* mSimulator;
   EventQueue mEventQueue;
-  Time mCurrentTime = 0;
+  Time mCurrentTime = Converter::microseconds(0);
   L2Mac mL2MacFlat;
-  const Time stopTime = Converter::seconds(10);
+  Time mStopTime = Converter::seconds(0);
+  RealtimeMeasurement mTimeMeasurement;
 
   Simulator();
   ~Simulator();
