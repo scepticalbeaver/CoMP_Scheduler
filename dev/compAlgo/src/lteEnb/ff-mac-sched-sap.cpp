@@ -29,6 +29,12 @@ bool FfMacSchedSapUser::getDciDecision(int cellId)
   return lastAvailableDecision;
 }
 
+bool FfMacSchedSapUser::peekDciDecision(int cellId)
+{
+  SchedulerDecisions& decisions = mDecisions[cellId];
+  return (decisions.empty())? false : decisions.front().second.dciDecision;
+}
+
 Time FfMacSchedSapUser::getMacToChannelDelay() const
 {
   return macToChannelDelay;

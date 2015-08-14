@@ -37,6 +37,9 @@ private:
 
   void processREChanges();
   void switchDirectCell(int cellId);
+
+  void simpleDecisionAlgo();
+  void movingAverageDecisionAlgo();
 };
 
 

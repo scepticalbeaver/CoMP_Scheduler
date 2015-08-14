@@ -9,8 +9,7 @@
 class FfMacSchedSapUser
 {
 public:
-  FfMacSchedSapUser()
-  {}
+  FfMacSchedSapUser() = default;
 
   struct SchedDlConfigIndParameters
   {
@@ -20,6 +19,8 @@ public:
   void schedDlConfigInd (int cellId, const SchedDlConfigIndParameters params);
 
   bool getDciDecision(int cellId);
+
+  bool peekDciDecision(int cellId);
 
   Time getMacToChannelDelay() const;
 

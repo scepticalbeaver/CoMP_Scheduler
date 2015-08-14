@@ -1,5 +1,8 @@
 #include "ff-mac-scheduler.h"
 
+#include <algorithm>
+#include <functional>
+
 #include "x2-channel.h"
 
 FfMacScheduler::FfMacScheduler(int cellId)
@@ -98,7 +101,8 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
   if (array.back().first - array.front().first > mWindowDuration)
     array.pop_front();
 
-  processREChanges();
+  if (SimTimeProvider::getTime() > Converter::seconds(1))
+    processREChanges();
 
   schedDlTriggerReq();
 }
@@ -146,7 +150,16 @@ void FfMacScheduler::switchDirectCell(int cellId)
   mDirectParticipantCellId = cellId;
 }
 
+
+
+
 void FfMacScheduler::processREChanges()
+{
+  simpleDecisionAlgo();
+}
+
+
+void FfMacScheduler::simpleDecisionAlgo()
 {
   const Time currentTime = SimTimeProvider::getTime();
   if (currentTime > Converter::seconds(3) && currentTime < Converter::seconds(6) && mDirectParticipantCellId != 2)
@@ -154,3 +167,23 @@ void FfMacScheduler::processREChanges()
   else if (currentTime > Converter::seconds(6) && mDirectParticipantCellId != 3)
     switchDirectCell(3);
 }
+
+void FfMacScheduler::movingAverageDecisionAlgo()
+{
+  int cellIdNext = mDirectParticipantCellId;
+  int maxSignal = 0;
+  for (const auto &csiPair : mCsiHistory)
+    {
+      auto signal = std::accumulate(csiPair.second.begin(), csiPair.second.end(), 0,
+                                    [] (int acc, const CsiUnit &unit) { return acc + unit.second; } );
+      if (signal > maxSignal)
+        {
+          cellIdNext = csiPair.first;
+          maxSignal = signal;
+        }
+    }
+
+  if (cellIdNext != mDirectParticipantCellId)
+    switchDirectCell(cellIdNext);
+}
+

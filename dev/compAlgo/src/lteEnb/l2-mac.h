@@ -28,6 +28,7 @@ private:
   std::vector<FfMacScheduler> mSchedulers;
   RealtimeMeasurement mTimeMeasurement;
   std::fstream mResultMacStats;
+  std::fstream mResultMeasurements;
 
   void printMacTimings();
 };

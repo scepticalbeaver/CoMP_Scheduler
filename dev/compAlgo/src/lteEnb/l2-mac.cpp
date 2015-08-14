@@ -12,9 +12,14 @@ L2Mac::L2Mac()
       mSchedulers.back().setFfMacSchedSapUser(mMacSapUser);
     }
 
-  std::string resultLocation = "../../../output/DlMacStats.txt";
-  mResultMacStats.open(resultLocation, std::ios_base::out | std::ios_base::trunc);
+  std::string resultMacLocation = "../../../output/DlMacStats.txt";
+  mResultMacStats.open(resultMacLocation, std::ios_base::out | std::ios_base::trunc);
   mResultMacStats << "% time	cellId	IMSI	frame	sframe	RNTI	mcsTb1	sizeTb1	mcsTb2	sizeTb2\n";
+
+  std::string resultRsrpLocation = "../../../output/measurements.log";
+  mResultMeasurements.open(resultRsrpLocation, std::ios_base::out | std::ios_base::trunc);
+  mResultMeasurements << "% time[usec]	srcCellId	targetCellId	RSRP\n";
+
 }
 
 L2Mac::~L2Mac()
@@ -22,6 +27,9 @@ L2Mac::~L2Mac()
   delete mMacSapUser;
   mResultMacStats.flush();
   mResultMacStats.close();
+
+  mResultMeasurements.flush();
+  mResultMeasurements.close();
 
   printMacTimings();
 }
@@ -58,6 +66,12 @@ void L2Mac::recvMeasurementsReport(int cellId, const CSIMeasurementReport &repor
   mSchedulers[cellId - 1].schedDlCqiInfoReq(report.targetCellId, report.csi);
 
   mTimeMeasurement.stop(fname);
+
+  if (mMacSapUser->peekDciDecision(cellId))
+    {
+      mResultMeasurements << report.csi.first << "\t" << cellId  << "\t"
+                          << report.targetCellId << "\t" << report.csi.second << "\n";
+    }
 }
 
 void L2Mac::recvX2Message(int cellId, const X2Message &message)
@@ -71,7 +85,8 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
       }
     case X2Message::measuresInd:
     {
-        recvMeasurementsReport(cellId, message.report);
+        const CSIMeasurementReport& report = message.report;
+        mSchedulers[cellId - 1].schedDlCqiInfoReq(report.targetCellId, report.csi);
         break;
       }
     case X2Message::leadershipInd:
