@@ -6,6 +6,8 @@ import sys
 import re
 import numpy as np
 
+ignore_imsi_str = "--ignore-imsi"
+
 def toThroughputKbps(bytes, seconds):
 	return bytes / 1000.0 * 8 / seconds
 #-------------------------------------------------------------------------------
@@ -41,7 +43,7 @@ def processRlcStats(filename, start_time):
 #-------------------------------------------------------------------------------
 #  MAC
 #-------------------------------------------------------------------------------
-def processMacStats(filename, start_time):
+def processMacStats(filename, start_time, ignor_ui_id = False):
 	epochDuration = .500
 	dlMacKPIs = np.loadtxt(filename, comments = '%')
 
@@ -57,7 +59,7 @@ def processMacStats(filename, start_time):
 		time = dlMacKPIs[i, 0]
 		if time < start_time:
 			continue
-		ueId = np.uint32(dlMacKPIs[i, 2]) - 1
+		ueId = 0 if ignor_ui_id else np.uint32(dlMacKPIs[i, 2]) - 1
 		mcs = np.uint32(dlMacKPIs[i, 6])
 		totalBytesRx[ueId] += dlMacKPIs[i, 7]
 
@@ -69,17 +71,14 @@ def processMacStats(filename, start_time):
 
 	totalDuration = dlMacKPIs[-1, 0] - macStartTime
 
-	print "DlThroughput (MAC) [Kbps]:"
-	print "Ue Id   Max         Average"
-	for i in range(3):
+	print "DlThroughput (MAC) [Kbps]:              Received (MAC):"
+	print "Ue Id   Max         Average             [Mb]"
+	number_ues = 1 if ignor_ui_id else 3
+	for i in range(number_ues):
 		aveThroughput = toThroughputKbps(totalBytesRx[i], totalDuration)
-		print "{0:<8}{1:<12}{2:<16}".format(i + 1, maxThroughput[i], aveThroughput)
-
-	print "\nTotal received (MAC):"
-	print "Ue Id   Received [Mb]"
-	for i in range(3):
-		print "{0:<8}{1:<12}".format(i + 1, totalBytesRx[i] / 1024 / 1024)
+		print "{0:<8}{1:<12}{2:<20}{3:<12}".format(i + 1, maxThroughput[i], aveThroughput, totalBytesRx[i] / 1024 / 1024)
 	print ""
+
 
 def is_float(value):
   try:
@@ -90,10 +89,12 @@ def is_float(value):
 
 def usage():
 	print "File name must contain words mac or rlc to process them appropriate\n"
-	print "Usage:  throughputCalc.py filepath [start time in same resolution as in file]"
+	print "Usage:  throughputCalc.py filepath [start time in same resolution as in file] [", ignore_imsi_str, "]\n"
+	print ignore_imsi_str, ":\tSum statistics, Mac only"
+
 	print "Examples:"
 	print "throughputCalc.py DlRlcStats.txt" 
-	print "throughputCalc.py ./some_directory/DlMacStats.txt 0.11\n"
+	print "throughputCalc.py ./some_directory/DlMacStats.txt 0.11 ", ignore_imsi_str ,"\n"
 
 def main():
 	argc = len(sys.argv)
@@ -115,7 +116,7 @@ def main():
 
 
 	if is_mac_stats:
-		processMacStats(full_path, start_time)
+		processMacStats(full_path, start_time, ignore_imsi_str in sys.argv)
 	else:
 		processRlcStats(full_path, start_time)
 
