@@ -17,32 +17,11 @@ public:
     bool dciDecision;
   };
 
-  void schedDlConfigInd (int cellId, const SchedDlConfigIndParameters params)
-  {
-    mDecisions[cellId].push(std::make_pair(SimTimeProvider::getTime() + macToChannelDelay, params));
-  }
+  void schedDlConfigInd (int cellId, const SchedDlConfigIndParameters params);
 
-  bool getDciDecision(int cellId)
-  {
-    bool lastAvailableDecision = false;
-    const Time currentTime = SimTimeProvider::getTime();
-    SchedulerDecisions& decisions = mDecisions[cellId];
-    while(!decisions.empty() && decisions.front().first <= currentTime)
-      {
-        lastAvailableDecision = decisions.front().second.dciDecision;
-        if (decisions.size() > 1)
-          {
-            decisions.pop(); // next decisions will be without delay
-          }
-        else
-          {
-            break;
-          }
-      }
+  bool getDciDecision(int cellId);
 
-    return lastAvailableDecision;
-  }
-
+  Time getMacToChannelDelay() const;
 
 private:
   const Time macToChannelDelay = Converter::milliseconds(1);

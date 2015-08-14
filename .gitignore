@@ -34,3 +34,5 @@ Makefile
 docs/*
 dev/3dparty/ns-3*
 dev/*/build
+dev/*/input
+dev/*/output

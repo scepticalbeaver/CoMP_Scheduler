@@ -21,7 +21,8 @@ SOURCES += src/main.cpp \
     src/lteEnb/l2-mac.cpp \
     src/lteEnb/x2-channel.cpp \
     src/lteEnb/ff-mac-scheduler.cpp \
-    src/helpers.cpp
+    src/helpers.cpp \
+    src/lteEnb/ff-mac-sched-sap.cpp
 
 HEADERS += \
     src/helpers.h \

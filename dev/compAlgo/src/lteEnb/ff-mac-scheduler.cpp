@@ -51,6 +51,7 @@ void FfMacScheduler::setTrafficActivity(bool mustSend)
       mDirectParticipantCellId = -1;
       mTxTrafficUntil = Converter::milliseconds(0);
     }
+  schedDlTriggerReq();
 }
 
 void FfMacScheduler::schedDlTriggerReq()
@@ -64,19 +65,24 @@ void FfMacScheduler::schedDlTriggerReq()
 
 void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
 {
-  if (!mIsLeader && mLeaderCellId != -1)
+  if (!mIsLeader)
     {
-      CSIMeasurementReport measReport;
-      measReport.csi = csi;
-      measReport.targetCellId = tCellId;
+      if (mLeaderCellId != -1)
+        {
+          CSIMeasurementReport measReport;
+          measReport.csi = csi;
+          measReport.targetCellId = tCellId;
 
-      X2Message msg;
-      msg.type = X2Message::measuresInd;
-      msg.report = measReport;
+          X2Message msg;
+          msg.type = X2Message::measuresInd;
+          msg.report = measReport;
 
-      X2Channel::instance()->send(mLeaderCellId, msg);
+          X2Channel::instance()->send(mLeaderCellId, msg);
+        }
       return;
     }
+  // This cell is leader:
+
 
   if (mCsiHistory[tCellId].empty())
     {
@@ -97,11 +103,6 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
   schedDlTriggerReq();
 }
 
-void FfMacScheduler::processREChanges()
-{
-
-}
-
 void FfMacScheduler::switchDirectCell(int cellId)
 {
   // switch traffic OFF at old cell
@@ -117,7 +118,8 @@ void FfMacScheduler::switchDirectCell(int cellId)
   else
     {
       // this cell
-      mTxTrafficUntil = SimTimeProvider::getTime() + X2Channel::instance()->getLatency() / 2;
+      mTxTrafficUntil =
+          SimTimeProvider::getTime() + X2Channel::instance()->getLatency() - mMacSapUser->getMacToChannelDelay();
       mIsDirectParticipant = false;
     }
 
@@ -136,9 +138,19 @@ void FfMacScheduler::switchDirectCell(int cellId)
   else
     {
       // this cell
-      mTxTrafficAfter = SimTimeProvider::getTime() + X2Channel::instance()->getLatency();
+      mTxTrafficAfter =
+          SimTimeProvider::getTime() + X2Channel::instance()->getLatency() - mMacSapUser->getMacToChannelDelay() / 2;
       mIsDirectParticipant = true;
     }
 
   mDirectParticipantCellId = cellId;
+}
+
+void FfMacScheduler::processREChanges()
+{
+  const Time currentTime = SimTimeProvider::getTime();
+  if (currentTime > Converter::seconds(3) && currentTime < Converter::seconds(6) && mDirectParticipantCellId != 2)
+    switchDirectCell(2);
+  else if (currentTime > Converter::seconds(6) && mDirectParticipantCellId != 3)
+    switchDirectCell(3);
 }

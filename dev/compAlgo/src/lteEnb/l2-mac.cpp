@@ -37,6 +37,13 @@ void L2Mac::activateDlCompFeature()
 
 void L2Mac::makeScheduleDecision(int cellId, const DlMacPacket &packet)
 {
+  const std::string fname = "makeScheduleDecision" + std::to_string(cellId);
+  mTimeMeasurement.start(fname);
+
+  mSchedulers[cellId - 1].schedDlTriggerReq();
+
+  mTimeMeasurement.stop(fname);
+
   if (mMacSapUser->getDciDecision(cellId))
     {
       mResultMacStats << packet.dlMacStatLine << "\n";
@@ -59,7 +66,7 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
     {
     case X2Message::changeScheduleModeInd:
       {
-        mSchedulers[cellId].setTrafficActivity(message.mustSendTraffic);
+        mSchedulers[cellId - 1].setTrafficActivity(message.mustSendTraffic);
         break;
       }
     case X2Message::measuresInd:
@@ -69,7 +76,7 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
       }
     case X2Message::leadershipInd:
       {
-        mSchedulers[cellId].setLeader(message.leaderCellId);
+        mSchedulers[cellId - 1].setLeader(message.leaderCellId);
         break;
       }
     }
@@ -87,7 +94,7 @@ void L2Mac::printMacTimings()
           << "\tmax: " << mTimeMeasurement.maximum(index));
     }
 
-  LOG("\tSchedDlCqiInfoReq + SchedDlTriggerReq  timings [us]:");
+  LOG("\tSchedDlCqiInfoReq timings [us]:");
   for (int i = 0; i < compMembersCount; i++)
     {
       const std::string index = "recvMeasurementsReport" + std::to_string(i + 1);
