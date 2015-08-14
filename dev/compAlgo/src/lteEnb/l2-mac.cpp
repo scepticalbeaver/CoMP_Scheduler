@@ -12,11 +12,11 @@ L2Mac::L2Mac()
       mSchedulers.back().setFfMacSchedSapUser(mMacSapUser);
     }
 
-  std::string resultMacLocation = "../../../output/DlMacStats.txt";
+  std::string resultMacLocation = "./output/DlMacStats.txt";
   mResultMacStats.open(resultMacLocation, std::ios_base::out | std::ios_base::trunc);
   mResultMacStats << "% time	cellId	IMSI	frame	sframe	RNTI	mcsTb1	sizeTb1	mcsTb2	sizeTb2\n";
 
-  std::string resultRsrpLocation = "../../../output/measurements.log";
+  std::string resultRsrpLocation = "./output/measurements.log";
   mResultMeasurements.open(resultRsrpLocation, std::ios_base::out | std::ios_base::trunc);
   mResultMeasurements << "% time[usec]	srcCellId	targetCellId	RSRP\n";
 

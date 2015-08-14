@@ -150,9 +150,6 @@ void FfMacScheduler::switchDirectCell(int cellId)
   mDirectParticipantCellId = cellId;
 }
 
-
-
-
 void FfMacScheduler::processREChanges()
 {
   simpleDecisionAlgo();

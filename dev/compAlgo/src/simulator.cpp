@@ -28,7 +28,7 @@ Simulator::Simulator()
 void Simulator::parseMacTraffic()
 {
   LOG("start parsing mac traffic...");
-  std::string location = "../../../input/DlMacStats.txt";
+  std::string location = "./input/DlMacStats.txt";
   std::fstream macStats;
   macStats.open(location, std::ios_base::in);
   assert(macStats.is_open());
@@ -69,7 +69,7 @@ void Simulator::parseMacTraffic()
 void Simulator::parseMeasurements()
 {
   LOG("start parsing measurements...");
-  std::string location = "../../../input/measurements.log";
+  std::string location = "./input/measurements.log";
   std::fstream measurements;
   measurements.open(location, std::ios_base::in);
   assert(measurements.is_open());
