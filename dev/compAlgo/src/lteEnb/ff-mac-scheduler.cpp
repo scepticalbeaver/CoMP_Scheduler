@@ -56,10 +56,10 @@ void FfMacScheduler::setTrafficActivity(bool mustSend)
 void FfMacScheduler::schedDlTriggerReq()
 {
   Time currentTime = SimTimeProvider::getTime();
-  bool canAlreadyTx = mIsDirectParticipant && currentTime > mTxTrafficAfter;
+  bool canAlreadyTx = mIsDirectParticipant && currentTime >= mTxTrafficAfter;
   bool canStillTx = !mIsDirectParticipant && currentTime < mTxTrafficUntil;
 
-  mMacSapUser->schedDlConfigInd({canAlreadyTx || canStillTx});
+  mMacSapUser->schedDlConfigInd(mCellId, {canAlreadyTx || canStillTx});
 }
 
 void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
@@ -92,7 +92,14 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
   if (array.back().first - array.front().first > mWindowDuration)
     array.pop_front();
 
-  // todo: make something cool algo here
+  processREChanges();
+
+  schedDlTriggerReq();
+}
+
+void FfMacScheduler::processREChanges()
+{
+
 }
 
 void FfMacScheduler::switchDirectCell(int cellId)

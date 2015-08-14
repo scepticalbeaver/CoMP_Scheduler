@@ -35,6 +35,7 @@ private:
 
   FfMacSchedSapUser *mMacSapUser = nullptr;
 
+  void processREChanges();
   void switchDirectCell(int cellId);
 };
 

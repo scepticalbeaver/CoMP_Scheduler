@@ -3,13 +3,13 @@
 #include <map>
 #include <queue>
 
+#include "../helpers.h"
 
 
 class FfMacSchedSapUser
 {
 public:
   FfMacSchedSapUser()
-    : mParams({false})
   {}
 
   struct SchedDlConfigIndParameters
@@ -17,19 +17,36 @@ public:
     bool dciDecision;
   };
 
-  void schedDlConfigInd (const SchedDlConfigIndParameters params)
+  void schedDlConfigInd (int cellId, const SchedDlConfigIndParameters params)
   {
-    mParams = params;
+    mDecisions[cellId].push(std::make_pair(SimTimeProvider::getTime() + macToChannelDelay, params));
   }
 
-  bool getDciDecision()
+  bool getDciDecision(int cellId)
   {
-    return mParams.dciDecision;
+    bool lastAvailableDecision = false;
+    const Time currentTime = SimTimeProvider::getTime();
+    SchedulerDecisions& decisions = mDecisions[cellId];
+    while(!decisions.empty() && decisions.front().first <= currentTime)
+      {
+        lastAvailableDecision = decisions.front().second.dciDecision;
+        if (decisions.size() > 1)
+          {
+            decisions.pop(); // next decisions will be without delay
+          }
+        else
+          {
+            break;
+          }
+      }
+
+    return lastAvailableDecision;
   }
 
 
 private:
-  //typedef
-  SchedDlConfigIndParameters mParams;
-  //std::map<int, SchedDlConfigIndParameters> mParams;
+  const Time macToChannelDelay = Converter::milliseconds(1);
+  using SchedulerDecisions = std::queue<std::pair<Time, SchedDlConfigIndParameters>>;
+
+  std::map<int, SchedulerDecisions> mDecisions;
 };
