@@ -1,5 +1,9 @@
 #pragma once
 
+#include <map>
+#include <queue>
+
+
 
 class FfMacSchedSapUser
 {
@@ -25,5 +29,7 @@ public:
 
 
 private:
+  //typedef
   SchedDlConfigIndParameters mParams;
+  //std::map<int, SchedDlConfigIndParameters> mParams;
 };

@@ -2,22 +2,6 @@
 
 #include "../helpers.h"
 
-struct X2Message
-{
-  enum X2MsgType
-  {
-    measuresInd
-    , changeScheduleModeInd
-    , leadershipInd
-  };
-
-  X2MsgType type;
-  CSIMeasurementReport report;
-  bool mustSendTraffic;
-  int leaderCellId;
-};
-
-
 class X2Channel
 {
 public:

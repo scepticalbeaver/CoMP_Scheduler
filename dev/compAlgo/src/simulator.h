@@ -1,6 +1,6 @@
 #pragma once
 
-#include "eventQueue.h"
+#include "helpers.h"
 #include "lteEnb/l2-mac.h"
 
 class Simulator
@@ -12,12 +12,12 @@ public:
   void run();
 
   void scheduleEvent(Event event);
-  Time getTime() const;
 
 private:
+  using EventQueue = std::priority_queue<Event, std::deque<Event>, std::greater<Event>>;
+
   static Simulator* mSimulator;
   EventQueue mEventQueue;
-  Time mCurrentTime = Converter::microseconds(0);
   L2Mac mL2MacFlat;
   Time mStopTime = Converter::seconds(0);
   RealtimeMeasurement mTimeMeasurement;

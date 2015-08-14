@@ -1,11 +1,39 @@
 #pragma once
 
+#include <string>
 #include <queue>
 #include <deque>
 
-#include "helpers.h"
-#include "lteEnb/l2-mac.h"
-#include "lteEnb/x2-channel.h"
+using Time = uint64_t;
+using CsiUnit = std::pair<Time, int>; //< time of measurements received, rsrp
+
+
+struct DlMacPacket
+{
+  std::string dlMacStatLine;
+};
+
+struct CSIMeasurementReport
+{
+  int targetCellId;
+  CsiUnit csi;
+};
+
+struct X2Message
+{
+  enum X2MsgType
+  {
+    measuresInd
+    , changeScheduleModeInd
+    , leadershipInd
+  };
+
+  X2MsgType type;
+  CSIMeasurementReport report;
+  bool mustSendTraffic;
+  int leaderCellId;
+};
+
 
 enum class EventType
 {
@@ -38,8 +66,6 @@ struct Event
   Event() {}
   Event(EventType type, uint64_t time) : eventType(type), atTime(time) {}
 };
-
-using EventQueue = std::priority_queue<Event, std::deque<Event>, std::greater<Event>>;
 
 
 

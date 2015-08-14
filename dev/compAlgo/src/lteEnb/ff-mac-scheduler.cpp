@@ -1,6 +1,6 @@
 #include "ff-mac-scheduler.h"
+
 #include "x2-channel.h"
-#include "../simulator.h"
 
 FfMacScheduler::FfMacScheduler(int cellId)
   : mCellId(cellId)
@@ -55,7 +55,7 @@ void FfMacScheduler::setTrafficActivity(bool mustSend)
 
 void FfMacScheduler::schedDlTriggerReq()
 {
-  Time currentTime = Simulator::instance()->getTime();
+  Time currentTime = SimTimeProvider::getTime();
   bool canAlreadyTx = mIsDirectParticipant && currentTime > mTxTrafficAfter;
   bool canStillTx = !mIsDirectParticipant && currentTime < mTxTrafficUntil;
 
@@ -110,7 +110,7 @@ void FfMacScheduler::switchDirectCell(int cellId)
   else
     {
       // this cell
-      mTxTrafficUntil = Simulator::instance()->getTime() + X2Channel::instance()->getLatency() / 2;
+      mTxTrafficUntil = SimTimeProvider::getTime() + X2Channel::instance()->getLatency() / 2;
       mIsDirectParticipant = false;
     }
 
@@ -129,7 +129,7 @@ void FfMacScheduler::switchDirectCell(int cellId)
   else
     {
       // this cell
-      mTxTrafficAfter = Simulator::instance()->getTime() + X2Channel::instance()->getLatency();
+      mTxTrafficAfter = SimTimeProvider::getTime() + X2Channel::instance()->getLatency();
       mIsDirectParticipant = true;
     }
 

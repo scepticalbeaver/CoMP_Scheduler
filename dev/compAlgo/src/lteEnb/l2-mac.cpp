@@ -1,6 +1,6 @@
 #include "l2-mac.h"
 
-#include <chrono>
+#include "x2-channel.h"
 
 L2Mac::L2Mac()
 {

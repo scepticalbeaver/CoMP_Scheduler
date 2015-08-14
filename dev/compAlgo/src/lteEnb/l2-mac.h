@@ -4,8 +4,9 @@
 #include <vector>
 #include <fstream>
 
-#include "x2-channel.h"
+#include "../helpers.h"
 #include "ff-mac-scheduler.h"
+#include "ff-mac-sched-sap.h"
 
 class L2Mac
 {

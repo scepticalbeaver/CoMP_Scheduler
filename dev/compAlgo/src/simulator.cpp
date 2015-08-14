@@ -5,6 +5,8 @@
 #include <sstream>
 #include <assert.h>
 
+#include "lteEnb/x2-channel.h"
+
 Simulator* Simulator::mSimulator = nullptr;
 
 Simulator *Simulator::instance()
@@ -125,9 +127,11 @@ void Simulator::destroy()
 
 void Simulator::run()
 {
+  const std::string fname = "run";
   LOG("\n\tSimulation has been started...\n");
   mL2MacFlat.activateDlCompFeature();
-  const std::string fname = "run";
+  SimTimeProvider::setTime(Converter::milliseconds(0));
+
   mTimeMeasurement.start(fname);
 
   int processedEvents = 0;
@@ -135,7 +139,7 @@ void Simulator::run()
     {
       Event event = mEventQueue.top();
       mEventQueue.pop();
-      mCurrentTime = event.atTime;
+      SimTimeProvider::setTime(event.atTime);
       switch(event.eventType)
         {
           case EventType::stopSimulation:
@@ -172,11 +176,6 @@ void Simulator::run()
 
 void Simulator::scheduleEvent(Event event)
 {
-  assert(event.atTime >= mCurrentTime);
+  assert(event.atTime >= SimTimeProvider::getTime());
   mEventQueue.push(event);
-}
-
-Time Simulator::getTime() const
-{
-  return mCurrentTime;
 }
