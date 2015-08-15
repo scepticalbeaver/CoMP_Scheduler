@@ -16,9 +16,10 @@ public:
 
   void activateDlCompFeature();
 
-  void makeScheduleDecision(int cellId, const DlMacPacket &packet);
+  void makeScheduleDecision(int cellId, const DlRlcPacket &packet);
   void recvMeasurementsReport(int cellId, const CSIMeasurementReport &report);
   void recvX2Message(int cellId, const X2Message &message);
+  void l2Timeout();
 
 private:
   FfMacSchedSapUser *mMacSapUser;
@@ -27,8 +28,12 @@ private:
 
   std::vector<FfMacScheduler> mSchedulers;
   RealtimeMeasurement mTimeMeasurement;
-  std::fstream mResultMacStats;
+  std::fstream mResultRlcStats;
   std::fstream mResultMeasurements;
+  size_t mMissedFrameCounter = 0;
+
+  L2Mac(const L2Mac &) = delete;
+  L2Mac& operator=(const L2Mac &) = delete;
 
   void printMacTimings();
 };

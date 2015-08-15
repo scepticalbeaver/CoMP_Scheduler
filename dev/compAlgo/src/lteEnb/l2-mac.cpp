@@ -1,6 +1,7 @@
 #include "l2-mac.h"
 
 #include "x2-channel.h"
+#include "../simulator.h"
 
 L2Mac::L2Mac()
 {
@@ -12,9 +13,10 @@ L2Mac::L2Mac()
       mSchedulers.back().setFfMacSchedSapUser(mMacSapUser);
     }
 
-  std::string resultMacLocation = "./output/DlMacStats.txt";
-  mResultMacStats.open(resultMacLocation, std::ios_base::out | std::ios_base::trunc);
-  mResultMacStats << "% time	cellId	IMSI	frame	sframe	RNTI	mcsTb1	sizeTb1	mcsTb2	sizeTb2\n";
+  std::string resultMacLocation = "./output/DlRlcStats.txt";
+  mResultRlcStats.open(resultMacLocation, std::ios_base::out | std::ios_base::trunc);
+  mResultRlcStats << "% start	end	CellId	IMSI	RNTI	LCID	nTxPDUs	TxBytes	nRxPDUs	RxBytes	delay"
+                  << "	stdDev	min	max	PduSize	stdDev	min	max\n";
 
   std::string resultRsrpLocation = "./output/measurements.log";
   mResultMeasurements.open(resultRsrpLocation, std::ios_base::out | std::ios_base::trunc);
@@ -25,36 +27,40 @@ L2Mac::L2Mac()
 L2Mac::~L2Mac()
 {
   delete mMacSapUser;
-  mResultMacStats.flush();
-  mResultMacStats.close();
+  mResultRlcStats.flush();
+  mResultRlcStats.close();
 
   mResultMeasurements.flush();
   mResultMeasurements.close();
 
   printMacTimings();
+  LOG("Not used timeframes: " << mMissedFrameCounter << "\t(about " << mMissedFrameCounter / 1000.0 << " [s])");
 }
 
 void L2Mac::activateDlCompFeature()
 {
   mSchedulers.front().setLeader(true);
-  for (auto &scheduler : mSchedulers)
-    {
-      scheduler.schedDlTriggerReq();
-    }
+  l2Timeout();
 }
 
-void L2Mac::makeScheduleDecision(int cellId, const DlMacPacket &packet)
+void L2Mac::makeScheduleDecision(int cellId, const DlRlcPacket &packet)
 {
-  const std::string fname = "makeScheduleDecision" + std::to_string(cellId);
-  mTimeMeasurement.start(fname);
+  static Time subframeTime = Converter::milliseconds(0);
+  const Time curTime = SimTimeProvider::getTime();
+  if (curTime > subframeTime)
+    {
+      if (mMacSapUser->getDirectCellId() == -1)
+        {
+          mMissedFrameCounter += 1;
+          LOG(">" << subframeTime << "  frame miss");
+        }
+      subframeTime = curTime;
+    }
 
-  mSchedulers[cellId - 1].schedDlTriggerReq();
-
-  mTimeMeasurement.stop(fname);
 
   if (mMacSapUser->getDciDecision(cellId))
     {
-      mResultMacStats << packet.dlMacStatLine << "\n";
+      mResultRlcStats << packet.dlRlcStatLine << "\n";
     }
 }
 
@@ -97,13 +103,30 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
     }
 }
 
+void L2Mac::l2Timeout()
+{
+  for (size_t i = 0; i < mSchedulers.size(); i++)
+    {
+      const std::string fname = "schedDlTriggerReq" + std::to_string(i + 1);
+      mTimeMeasurement.start(fname);
+
+      mSchedulers[i].schedDlTriggerReq();
+
+      mTimeMeasurement.stop(fname);
+    }
+
+  Simulator::instance()->scheduleEvent(Event(EventType::l2Timeout,
+                                             SimTimeProvider::getTime() + Converter::microseconds(999)));
+
+}
+
 void L2Mac::printMacTimings()
 {
   LOG("Mac simulation statistics:");
   LOG("\tSchedDlTriggerReq timings [us]:");
   for (int i = 0; i < compMembersCount; i++)
     {
-      const std::string index = "makeScheduleDecision" + std::to_string(i + 1);
+      const std::string index = "schedDlTriggerReq" + std::to_string(i + 1);
       LOG("\tcellId = " << i + 1
           << "\tave: " << mTimeMeasurement.average(index) << "\tmin: "<< mTimeMeasurement.minimum(index)
           << "\tmax: " << mTimeMeasurement.maximum(index));

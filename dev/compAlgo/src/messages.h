@@ -8,9 +8,9 @@ using Time = uint64_t;
 using CsiUnit = std::pair<Time, int>; //< time of measurements received, rsrp
 
 
-struct DlMacPacket
+struct DlRlcPacket
 {
-  std::string dlMacStatLine;
+  std::string dlRlcStatLine;
 };
 
 struct CSIMeasurementReport
@@ -41,6 +41,7 @@ enum class EventType
   , csiIndicator
   , x2Message
   , stopSimulation
+  , l2Timeout
 };
 
 
@@ -50,7 +51,7 @@ struct Event
   Time atTime;
   int cellId;
 
-  DlMacPacket packet;
+  DlRlcPacket packet;
   CSIMeasurementReport report;
   X2Message message;
 

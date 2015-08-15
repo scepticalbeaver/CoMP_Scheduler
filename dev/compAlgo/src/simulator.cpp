@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <assert.h>
+#include <math.h>
 
 #include "lteEnb/x2-channel.h"
 
@@ -28,15 +29,15 @@ Simulator::Simulator()
 void Simulator::parseMacTraffic()
 {
   LOG("start parsing mac traffic...");
-  std::string location = "./input/DlMacStats.txt";
-  std::fstream macStats;
-  macStats.open(location, std::ios_base::in);
-  assert(macStats.is_open());
+  std::string location = "./input/DlRlcStats.txt";
+  std::fstream rlcStats;
+  rlcStats.open(location, std::ios_base::in);
+  assert(rlcStats.is_open());
 
   std::string line;
-  std::getline(macStats, line); // first line dummy
+  std::getline(rlcStats, line); // first line dummy
 
-  while (std::getline(macStats, line))
+  while (std::getline(rlcStats, line))
     {
       if (line.size() < 15)
         {
@@ -45,14 +46,18 @@ void Simulator::parseMacTraffic()
         }
 
       std::stringstream stream(line);
+      /*
+       *  % start end CellId IMSI RNTI LCID nTxPDUs TxBytes nRxPDUs RxBytes delay ... etc
+       */
+      double timeBegin; // seconds
+      double timeEnd; // seconds
+      int cellId, imsi, rnti, lcid, nTxPdu, txBytes, nRxPdu,rxBytes;
+      stream >> timeBegin >> timeEnd >> cellId >> imsi >> rnti >> lcid >> nTxPdu >> txBytes >> nRxPdu >> rxBytes;
+      Time timeUSec = static_cast<uint64_t>(round(timeBegin * 1000) * 1000);
 
-      double time; // seconds
-      int cellId;
-      stream >> time >> cellId;
-      Time timeUSec = static_cast<uint64_t>(time * 1000 * 1000);
-
-      DlMacPacket packet;
-      packet.dlMacStatLine = line;
+//      assert((nTxPdu == 1 || nTxPdu == 0) && (nRxPdu == 0 || nRxPdu == 1));
+      DlRlcPacket packet;
+      packet.dlRlcStatLine = line;
 
       Event event(EventType::scheduleAttempt, timeUSec);
       event.cellId = cellId;
@@ -163,6 +168,9 @@ void Simulator::run()
             mL2MacFlat.makeScheduleDecision(event.cellId, event.packet);
             break;
           }
+        case EventType::l2Timeout:
+          mL2MacFlat.l2Timeout();
+          break;
         }
 
       ++processedEvents;

@@ -9,7 +9,7 @@ FfMacScheduler::FfMacScheduler(int cellId)
   : mCellId(cellId)
   , mIsLeader(false)
   , mIsDirectParticipant(false)
-  , mWindowDuration(Converter::milliseconds(500))
+  , mWindowDuration(Converter::milliseconds(16))
   , mDirectParticipantCellId(-1)
   , mLeaderCellId(-1)
 {
@@ -123,7 +123,8 @@ void FfMacScheduler::switchDirectCell(int cellId)
     {
       // this cell
       mTxTrafficUntil =
-          SimTimeProvider::getTime() + X2Channel::instance()->getLatency() - mMacSapUser->getMacToChannelDelay();
+          SimTimeProvider::getTime()
+          + X2Channel::instance()->getLatency() / 10 * 9;
       mIsDirectParticipant = false;
     }
 
@@ -143,7 +144,8 @@ void FfMacScheduler::switchDirectCell(int cellId)
     {
       // this cell
       mTxTrafficAfter =
-          SimTimeProvider::getTime() + X2Channel::instance()->getLatency() - mMacSapUser->getMacToChannelDelay() / 2;
+          SimTimeProvider::getTime()
+          + X2Channel::instance()->getLatency() / 10 * 11;
       mIsDirectParticipant = true;
     }
 
@@ -152,7 +154,7 @@ void FfMacScheduler::switchDirectCell(int cellId)
 
 void FfMacScheduler::processREChanges()
 {
-  simpleDecisionAlgo();
+  movingAverageDecisionAlgo();
 }
 
 
@@ -168,19 +170,38 @@ void FfMacScheduler::simpleDecisionAlgo()
 void FfMacScheduler::movingAverageDecisionAlgo()
 {
   int cellIdNext = mDirectParticipantCellId;
-  int maxSignal = 0;
+
+  double aveProbes = 0;
+  std::map<int, double> signalLvl;
   for (const auto &csiPair : mCsiHistory)
     {
-      auto signal = std::accumulate(csiPair.second.begin(), csiPair.second.end(), 0,
+      auto signalSum = std::accumulate(csiPair.second.begin(), csiPair.second.end(), 0,
                                     [] (int acc, const CsiUnit &unit) { return acc + unit.second; } );
-      if (signal > maxSignal)
+      double aveSignal = (signalSum + 0.0) / csiPair.second.size();
+      signalLvl.insert(std::make_pair(csiPair.first, aveSignal));
+
+      aveProbes += csiPair.second.size();
+    }
+
+  aveProbes /= mCsiHistory.size();
+  if (aveProbes < 3.0)
+    return;
+
+  double maxSignal = signalLvl[mDirectParticipantCellId];
+  for (const auto &cellSignalPair : signalLvl)
+    {
+      if (cellSignalPair.second > maxSignal + 0.6)
         {
-          cellIdNext = csiPair.first;
-          maxSignal = signal;
+          maxSignal = cellSignalPair.second;
+          cellIdNext = cellSignalPair.first;
         }
     }
 
   if (cellIdNext != mDirectParticipantCellId)
-    switchDirectCell(cellIdNext);
+    {
+      LOG("@" << SimTimeProvider::getTime()
+          << "  cell switch from " << mDirectParticipantCellId << " to " << cellIdNext);
+      switchDirectCell(cellIdNext);
+    }
 }
 

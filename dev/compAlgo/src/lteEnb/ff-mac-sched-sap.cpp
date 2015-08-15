@@ -1,17 +1,19 @@
 #include "ff-mac-sched-sap.h"
 
+#include <assert.h>
 
-
-
-void FfMacSchedSapUser::schedDlConfigInd(int cellId, const FfMacSchedSapUser::SchedDlConfigIndParameters params)
+void FfMacSchedSapUser::schedDlConfigInd(int cellId, const SchedDlConfigIndParameters &params)
 {
   mDecisions[cellId].push(std::make_pair(SimTimeProvider::getTime() + macToChannelDelay, params));
 }
 
-bool FfMacSchedSapUser::getDciDecision(int cellId)
+bool FfMacSchedSapUser::getDciDecision(int cellId, bool peek)
 {
   bool lastAvailableDecision = false;
   const Time currentTime = SimTimeProvider::getTime();
+
+  const auto copyOfCellDecisions = mDecisions[cellId];
+
   SchedulerDecisions& decisions = mDecisions[cellId];
   while(!decisions.empty() && decisions.front().first <= currentTime)
     {
@@ -26,7 +28,31 @@ bool FfMacSchedSapUser::getDciDecision(int cellId)
         }
     }
 
+  if (peek)
+    mDecisions[cellId] = copyOfCellDecisions;
+
   return lastAvailableDecision;
+}
+
+int FfMacSchedSapUser::getDirectCellId()
+{
+  const bool peek = true;
+  std::vector<int> decisions {getDciDecision(1, peek), getDciDecision(2, peek), getDciDecision(3, peek)};
+  int cellId = -1;
+  for (int i = 0; i < decisions.size(); i++)
+    {
+      int decision = decisions[i];
+      if (!decision)
+        continue;
+      if (cellId == -1)
+        cellId = i;
+      else
+        {
+          LOG("@" << SimTimeProvider::getTime() << "\tASSERT:\tDual transmission");
+          assert(false);
+        }
+    }
+  return cellId;
 }
 
 bool FfMacSchedSapUser::peekDciDecision(int cellId)

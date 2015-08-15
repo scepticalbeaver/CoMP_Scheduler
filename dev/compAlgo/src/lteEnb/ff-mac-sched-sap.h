@@ -16,9 +16,10 @@ public:
     bool dciDecision;
   };
 
-  void schedDlConfigInd (int cellId, const SchedDlConfigIndParameters params);
+  void schedDlConfigInd (int cellId, const SchedDlConfigIndParameters &params);
 
-  bool getDciDecision(int cellId);
+  bool getDciDecision(int cellId, bool peek = false);
+  int getDirectCellId(); //< for debugging purpose
 
   bool peekDciDecision(int cellId);
 

@@ -11,8 +11,14 @@ def reject_outliers_at(x_vals, y_vals, m, beg, end):
 	x_vals_new = []
 	y_vals_new = []
 
+
 	diff = np.abs(y_vals[beg : end] - np.median(y_vals[beg : end]))
 	mdev = np.median(diff)
+	offset = 3
+	if len(x_vals) > end + offset:
+		diff2 = np.abs(y_vals[beg + offset : end + offset] - np.median(y_vals[beg + offset : end + offset]))
+		mdev = (mdev + np.median(diff2)) / 2.0
+
 	s = diff / mdev if mdev else diff
 	for j in range(beg, end):
 		if s[j - beg] < m:
@@ -24,7 +30,7 @@ def reject_outliers(x_vals, y_vals, m = 2.5):
 	x_vals_new = []
 	y_vals_new = []
 
-	chunk_size = 7
+	chunk_size = 5
 	chunk_num = len(y_vals) / chunk_size
 	i = 0
 
@@ -123,6 +129,10 @@ def main():
 	plt.ylim((mmin - 2, mmax + 2))
 	plt.legend(loc=4)
 	plt.grid(True)
+	plt.xlabel('Time [s]')
+	plt.ylabel('RSRP')
+	plt.suptitle('CSI')
+
 	plt.savefig("measurements_plot.png")
 	
 	if "--show" in sys.argv:
