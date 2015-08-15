@@ -14,6 +14,8 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/config-store-module.h"
 
+#include "simConfig.h"
+
 
 using namespace ns3;
 
@@ -39,9 +41,10 @@ int updateCounter[3] {};
 std::fstream measurementSink;
 
 
+
 void updateMeasIntervals(unsigned sourceCellId, unsigned cellId, int64_t time, unsigned rsrp)
 {
-  if (time < 100) // ms
+  if (time < 14) // us
     return;
 
   if (prevMeasuresTime[cellId - 1] >= 0)
@@ -89,18 +92,18 @@ RecvMeasurementReportCallback (std::string context, uint64_t imsi, uint16_t cell
           }
       }
 
-  if (time < 8000000)
-    return;
+//  std::cout << counter << "\ttime: " << time << "[us]" << "\tue# " << imsi
+//            << "\trsrq: " << (int)measReport.measResults.rsrqResult << "\n";
 
 
-  hasNeighbours = hasNeighbours && measReport.measResults.measResultListEutra.front().haveRsrpResult;
+//  hasNeighbours = hasNeighbours && measReport.measResults.measResultListEutra.front().haveRsrpResult;
 
-  std::cout << counter << "\ttime: " << time << "[us]" << "\tue# " << imsi << "\trsrp: " << rsrp << "\tSNR: " << snr;
-  if (prevMeasuresTime[cellId - 1] > 0)
-    std::cout << "\t\tmax interval: " << maxInterval[cellId - 1]
-              << " [us]\taverage: " << intervalsSum[cellId - 1] / updateCounter[cellId - 1] << " [us]\t";
+//  std::cout << counter << "\ttime: " << time << "[us]" << "\tue# " << imsi << "\trsrp: " << rsrp << "\tSNR: " << snr;
+//  if (prevMeasuresTime[cellId - 1] > 0)
+//    std::cout << "\t\tmax interval: " << maxInterval[cellId - 1]
+//              << " [us]\taverage: " << intervalsSum[cellId - 1] / updateCounter[cellId - 1] << " [us]\t";
 
-    std::cout << " " << context << "hN: " << hasNeighbours << "\n";
+//    std::cout << " " << context << "hN: " << hasNeighbours << "\n";
 
 }
 
@@ -114,24 +117,19 @@ PrintGnuplottableUeListToFile (std::string filename)
       NS_LOG_ERROR ("Can't open file " << filename);
       return;
     }
-  for (NodeList::Iterator it = NodeList::Begin (); it != NodeList::End (); ++it)
-    {
-      Ptr<Node> node = *it;
-      int nDevs = node->GetNDevices ();
-      for (int j = 0; j < nDevs; j++)
-        {
-          Ptr<LteUeNetDevice> uedev = node->GetDevice (j)->GetObject <LteUeNetDevice> ();
-          if (uedev)
-            {
-              if (uedev->GetImsi() > 1)
-                continue;
-              Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << "UE"
-                      << "\" at " << pos.x << "," << pos.y << " left font \"Helvetica,12\" textcolor rgb \"grey\" front point pt 1 ps 0.3 lc rgb \"grey\" offset -1,-0.9"
-                      << std::endl;
-            }
-        }
-    }
+
+  outFile << "set label \"" << "UE start pos"
+          << "\" at " << UeConfig::xPosStart << "," << UeConfig::yPosStart
+          << " left font \"Helvetica,12\" textcolor rgb \"grey\" front point pt 3 ps 0.3 lc rgb \"grey\""
+          << " offset -8.5,-0.9"
+          << std::endl;
+  outFile << "set label \"" << "UE end pos"
+          << "\" at " << UeConfig::xPosEnd(simTime) << "," << UeConfig::yPosEnd(simTime)
+          << " left font \"Helvetica,12\" textcolor rgb \"grey\" front point pt 3 ps 0.3 lc rgb \"grey\""
+          << " offset -8,+0.7"
+          << std::endl;
+
+
 }
 
 void
@@ -153,12 +151,14 @@ PrintGnuplottableEnbListToFile (std::string filename)
           Ptr<LteEnbNetDevice> enbdev = node->GetDevice (j)->GetObject <LteEnbNetDevice> ();
           if (enbdev)
             {
-              if (enbdev->GetCellId() > 2)
-                continue;
               Vector pos = node->GetObject<MobilityModel> ()->GetPosition ();
-              outFile << "set label \"" << "eNB#" << enbdev->GetCellId ()
+
+              std::string offset[] {"1.1, -0.1", "-4.9, +1.9", "-4.9,-1.6", "-1.3,-3.5"};
+
+              outFile << "set label \"" << "cell " << enbdev->GetCellId ()
                       << "\" at " << pos.x << "," << pos.y
-                      << " left font \"Helvetica,12\" textcolor rgb \"white\" front  point pt 2 ps 0.3 lc rgb \"white\" offset -1.1,-1.1"
+                      << " left font \"Helvetica,12\" textcolor rgb \"white\" front  point pt 4 ps 1.3 lc"
+                      << " rgb \"white\" offset " << offset[enbdev->GetCellId() - 1]
                       << std::endl;
 
             }

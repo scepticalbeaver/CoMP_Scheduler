@@ -49,7 +49,8 @@ SOURCES += \
     main.cpp
 
 HEADERS += \
-    helpers.h
+    helpers.h \
+    simConfig.h
 
 
 

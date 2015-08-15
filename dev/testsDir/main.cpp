@@ -32,16 +32,9 @@ main ()
   uint16_t numberOfUes = 3;
   uint16_t numberOfEnbs = 4;
   double distance = 500.0; // m
-  double ueZValue = 1.5;
-
-  double ueSpeed = 0.9; // ~3.2 kmph in mps
-  //Vector ueStartPos(0.0, -2.0,  ueZValue);
-  Vector ueStartPos(700.0, -4.0,  ueZValue);
-  Vector ueVelocity(0.0, ueSpeed, 0.0);
-
-  double simTime = 10;
 
   double enbTxPowerDbm = 43.0;
+
   bool doGenerateRem = false;
 
   //---------------------------------------------------------------------
@@ -64,14 +57,18 @@ main ()
   lteHelper->SetFfrAlgorithmAttribute ("DlEdgeSubBandwidth", UintegerValue (8));
   lteHelper->SetFfrAlgorithmAttribute ("UlEdgeSubBandwidth", UintegerValue (8));
   lteHelper->SetFfrAlgorithmAttribute ("AllowCenterUeUseEdgeSubBand", BooleanValue (true));
-  lteHelper->SetFfrAlgorithmAttribute ("RsrqThreshold", UintegerValue (20));
+  lteHelper->SetFfrAlgorithmAttribute ("RsrqThreshold", UintegerValue (18));
   lteHelper->SetFfrAlgorithmAttribute ("EdgePowerOffset", UintegerValue (LteRrcSap::PdschConfigDedicated::dB3));
 
-
   lteHelper->SetSchedulerType ("ns3::FdMtFfMacScheduler");
-  lteHelper->SetSchedulerAttribute("CqiTimerThreshold", UintegerValue (20));
+  lteHelper->SetSchedulerAttribute("CqiTimerThreshold", UintegerValue (10));
+  lteHelper->SetSchedulerAttribute("UlCqiFilter", EnumValue(FfMacScheduler::PUSCH_UL_CQI));
 
   lteHelper->SetHandoverAlgorithmType ("ns3::NoOpHandoverAlgorithm");
+
+
+  Config::SetDefault ("ns3::LteUePhy::UeMeasurementsFilterPeriod", TimeValue (MilliSeconds(10)));
+
 
   /*
   lteHelper->SetEnbDeviceAttribute ("DlBandwidth", UintegerValue (bandwidth)); // in number of RBs, 25
@@ -98,10 +95,10 @@ main ()
 
   // Install Mobility Model in eNB
   Ptr<ListPositionAllocator> eNBPositionAllocator = CreateObject<ListPositionAllocator> ();
-  eNBPositionAllocator->Add(Vector (0.0         , 0.0, ueZValue)); // eNB1, cell1
-  eNBPositionAllocator->Add(Vector (2 * distance, 0.0, ueZValue)); // eNB2, cell2
-  eNBPositionAllocator->Add(Vector (2 * distance, 0.0, ueZValue)); // eNB2, cell3
-  eNBPositionAllocator->Add(Vector (2 * distance, 0.0, ueZValue)); // eNB2, cell4
+  eNBPositionAllocator->Add(Vector (0.0         , 0.0, UeConfig::zPosStart)); // eNB1, cell1
+  eNBPositionAllocator->Add(Vector (2 * distance, 0.5, UeConfig::zPosStart)); // eNB2, cell2
+  eNBPositionAllocator->Add(Vector (2 * distance - 0.5, 0.0, UeConfig::zPosStart)); // eNB2, cell3
+  eNBPositionAllocator->Add(Vector (2 * distance, -0.5, UeConfig::zPosStart)); // eNB2, cell4
 
   MobilityHelper eNBMobility;
   eNBMobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
@@ -113,8 +110,8 @@ main ()
   ueMobility.Install(ueNodes);
   for (int i = 0; i < numberOfUes; i++)
     {
-      ueNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(ueStartPos);
-      ueNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(ueVelocity);
+      ueNodes.Get(i)->GetObject<MobilityModel>()->SetPosition(UeConfig::ueStartPos());
+      ueNodes.Get(i)->GetObject<ConstantVelocityMobilityModel>()->SetVelocity(UeConfig::ueVelocity());
     }
 
   //---------------------------------------------------------------------
@@ -230,8 +227,8 @@ main ()
   lteHelper->EnableRlcTraces();
 
   Ptr<RadioBearerStatsCalculator> rlcStats = lteHelper->GetRlcStats ();
-  rlcStats->SetAttribute ("StartTime", TimeValue (MilliSeconds(20)));
-  rlcStats->SetAttribute ("EpochDuration", TimeValue (MilliSeconds(500.0)));
+  rlcStats->SetAttribute ("StartTime", TimeValue (MilliSeconds(100)));
+  rlcStats->SetAttribute ("EpochDuration", TimeValue (MicroSeconds(1000)));
 
 
    //connect custom trace sinks for RRC connection establishment and handover notification
@@ -257,7 +254,7 @@ main ()
       remHelper->SetAttribute ("XMax", DoubleValue (right));
       remHelper->SetAttribute ("YMin", DoubleValue (top));
       remHelper->SetAttribute ("YMax", DoubleValue (bottom));
-      remHelper->SetAttribute ("Z", DoubleValue (ueZValue));
+      remHelper->SetAttribute ("Z", DoubleValue (UeConfig::ueStartPos().z));
 //      remHelper->SetAttribute ("XRes", UintegerValue ((right - left) / 3));
 //      remHelper->SetAttribute ("YRes", UintegerValue (height / 3));
 
