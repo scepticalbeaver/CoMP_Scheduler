@@ -31,6 +31,7 @@ struct X2Message
   X2MsgType type;
   CSIMeasurementReport report;
   bool mustSendTraffic;
+  Time applyDirectMembership;
   int leaderCellId;
 };
 

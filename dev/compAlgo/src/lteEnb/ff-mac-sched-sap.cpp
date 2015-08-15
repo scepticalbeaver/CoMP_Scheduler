@@ -4,7 +4,14 @@
 
 void FfMacSchedSapUser::schedDlConfigInd(int cellId, const SchedDlConfigIndParameters &params)
 {
-  mDecisions[cellId].push(std::make_pair(SimTimeProvider::getTime() + macToChannelDelay, params));
+  mDecisions[cellId].push_back(std::make_pair(SimTimeProvider::getTime() + macToChannelDelay, params));
+  if (mDecisions[cellId].size() < 10)
+    return;
+
+  const Time currentTime = SimTimeProvider::getTime();
+  SchedulerDecisions& decisions = mDecisions[cellId];
+  while (decisions.size() >= 2 && decisions[0].first < currentTime && decisions[1].first < currentTime)
+    decisions.pop_front();
 }
 
 bool FfMacSchedSapUser::getDciDecision(int cellId, bool peek)
@@ -20,7 +27,7 @@ bool FfMacSchedSapUser::getDciDecision(int cellId, bool peek)
       lastAvailableDecision = decisions.front().second.dciDecision;
       if (decisions.size() > 1)
         {
-          decisions.pop(); // next decisions will be without delay
+          decisions.pop_front(); // next decisions will be without delay
         }
       else
         {
@@ -48,8 +55,7 @@ int FfMacSchedSapUser::getDirectCellId()
         cellId = i;
       else
         {
-          LOG("@" << SimTimeProvider::getTime() << "\tASSERT:\tDual transmission");
-          assert(false);
+          ERR("@" << SimTimeProvider::getTime() << "\tASSERT:\tDual transmission");
         }
     }
   return cellId;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../helpers.h"
+#include <map>
 
 class X2Channel
 {
@@ -19,6 +20,8 @@ private:
   const Time delay = Converter::milliseconds(2);
 
   static X2Channel* mInstance;
+
+  std::map<int, Time> mLastSentTime;
 
   X2Channel() = default;
 };

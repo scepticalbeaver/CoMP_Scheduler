@@ -34,13 +34,13 @@ L2Mac::~L2Mac()
   mResultMeasurements.close();
 
   printMacTimings();
-  LOG("Not used timeframes: " << mMissedFrameCounter << "\t(about " << mMissedFrameCounter / 1000.0 << " [s])");
+  LOG("Not used timeframes: " << mMissedFrameCounter << "\t(about " << mMissedFrameCounter / 1000.0 << " [s])\n");
 }
 
 void L2Mac::activateDlCompFeature()
 {
   mSchedulers.front().setLeader(true);
-  l2Timeout();
+  l2Timeout(-1);
 }
 
 void L2Mac::makeScheduleDecision(int cellId, const DlRlcPacket &packet)
@@ -86,7 +86,7 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
     {
     case X2Message::changeScheduleModeInd:
       {
-        mSchedulers[cellId - 1].setTrafficActivity(message.mustSendTraffic);
+        mSchedulers[cellId - 1].setTrafficActivity(message.mustSendTraffic, message.applyDirectMembership);
         break;
       }
     case X2Message::measuresInd:
@@ -103,36 +103,34 @@ void L2Mac::recvX2Message(int cellId, const X2Message &message)
     }
 }
 
-void L2Mac::l2Timeout()
+void L2Mac::l2Timeout(int cellId)
 {
-  for (size_t i = 0; i < mSchedulers.size(); i++)
+  size_t begin = 1;
+  size_t end = mSchedulers.size();
+  if (cellId >= 0)
     {
-      const std::string fname = "schedDlTriggerReq" + std::to_string(i + 1);
-      mTimeMeasurement.start(fname);
-
-      mSchedulers[i].schedDlTriggerReq();
-
-      mTimeMeasurement.stop(fname);
+      begin = cellId;
+      end = begin + 1;
     }
 
-  Simulator::instance()->scheduleEvent(Event(EventType::l2Timeout,
-                                             SimTimeProvider::getTime() + Converter::microseconds(999)));
+  for (size_t i = begin; i < end; i++)
+    {
+      mSchedulers[i - 1].onTimeout();
+    }
+
+  if (cellId == -1)
+    {
+      Event event { EventType::l2Timeout, SimTimeProvider::getTime() + Converter::microseconds(999) };
+      event.cellId = -1;
+      Simulator::instance()->scheduleEvent(event);
+    }
 
 }
 
 void L2Mac::printMacTimings()
 {
   LOG("Mac simulation statistics:");
-  LOG("\tSchedDlTriggerReq timings [us]:");
-  for (int i = 0; i < compMembersCount; i++)
-    {
-      const std::string index = "schedDlTriggerReq" + std::to_string(i + 1);
-      LOG("\tcellId = " << i + 1
-          << "\tave: " << mTimeMeasurement.average(index) << "\tmin: "<< mTimeMeasurement.minimum(index)
-          << "\tmax: " << mTimeMeasurement.maximum(index));
-    }
-
-  LOG("\tSchedDlCqiInfoReq timings [us]:");
+  LOG("\tScheduler decisions timings [us]:");
   for (int i = 0; i < compMembersCount; i++)
     {
       const std::string index = "recvMeasurementsReport" + std::to_string(i + 1);
@@ -140,4 +138,5 @@ void L2Mac::printMacTimings()
           << "\tave: " << mTimeMeasurement.average(index) << "\tmin: "<< mTimeMeasurement.minimum(index)
           << "\tmax: " << mTimeMeasurement.maximum(index));
     }
+  LOG("\n");
 }

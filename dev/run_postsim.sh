@@ -1,3 +1,4 @@
+#!/bin/bash
 # script for post simulation and printing results
 
 clear
@@ -21,7 +22,6 @@ echo "CoMP algo:"
 python throughputCalc.py compAlgo/output/DlRlcStats.txt --ignore-imsi
 echo ""
 
-python plotRsrp.py --rm-outliers --ue
+python plotRsrp.py --ue $1
 echo "Measurements plot done. See 'measurements_plot.png'"
 echo "Postprocessing finished"
-

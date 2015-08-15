@@ -19,7 +19,7 @@ public:
   void makeScheduleDecision(int cellId, const DlRlcPacket &packet);
   void recvMeasurementsReport(int cellId, const CSIMeasurementReport &report);
   void recvX2Message(int cellId, const X2Message &message);
-  void l2Timeout();
+  void l2Timeout(int cellId);
 
 private:
   FfMacSchedSapUser *mMacSapUser;
@@ -27,7 +27,7 @@ private:
   const int compMembersCount = 3;
 
   std::vector<FfMacScheduler> mSchedulers;
-  RealtimeMeasurement mTimeMeasurement;
+  TimeMeasurement mTimeMeasurement;
   std::fstream mResultRlcStats;
   std::fstream mResultMeasurements;
   size_t mMissedFrameCounter = 0;

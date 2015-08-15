@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include <queue>
+#include <deque>
 
 #include "../helpers.h"
 
@@ -27,7 +27,7 @@ public:
 
 private:
   const Time macToChannelDelay = Converter::milliseconds(1);
-  using SchedulerDecisions = std::queue<std::pair<Time, SchedDlConfigIndParameters>>;
+  using SchedulerDecisions = std::deque<std::pair<Time, SchedDlConfigIndParameters>>;
 
   std::map<int, SchedulerDecisions> mDecisions;
 };

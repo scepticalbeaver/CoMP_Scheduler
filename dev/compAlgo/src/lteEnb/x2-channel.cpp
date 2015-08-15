@@ -39,7 +39,14 @@ void X2Channel::send(int tCellId, X2Message msg)
 
   for (int i = beginMulticastId; i < endMulticastId; i++)
     {
-      Event msgEvent(EventType::x2Message, SimTimeProvider::getTime() + getLatency());
+      const Time constArrivalPart = SimTimeProvider::getTime() + getLatency();
+      Time variativePart = Converter::microseconds(tCellId);
+
+      if (constArrivalPart + variativePart == mLastSentTime[tCellId])
+        variativePart += Converter::microseconds(1);
+      mLastSentTime[tCellId] = constArrivalPart + variativePart;
+
+      Event msgEvent(EventType::x2Message, constArrivalPart + variativePart);
       msgEvent.cellId = i;
       msgEvent.message = msg;
       Simulator::instance()->scheduleEvent(msgEvent);

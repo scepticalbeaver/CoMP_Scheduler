@@ -20,7 +20,7 @@ private:
   EventQueue mEventQueue;
   L2Mac mL2MacFlat;
   Time mStopTime = Converter::seconds(0);
-  RealtimeMeasurement mTimeMeasurement;
+  TimeMeasurement mTimeMeasurement;
 
   Simulator();
   ~Simulator();

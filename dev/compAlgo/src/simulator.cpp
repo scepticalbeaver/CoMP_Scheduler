@@ -169,7 +169,7 @@ void Simulator::run()
             break;
           }
         case EventType::l2Timeout:
-          mL2MacFlat.l2Timeout();
+          mL2MacFlat.l2Timeout(event.cellId);
           break;
         }
 

@@ -5,7 +5,9 @@ import sys
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.interpolate import spline
+import scipy.interpolate as ip
+import scipy.fftpack
+
 
 def reject_outliers_at(x_vals, y_vals, m, beg, end):
 	x_vals_new = []
@@ -89,13 +91,23 @@ def plot_comp_ue_measures(may_rm_outliers=False):
 	if may_rm_outliers:
 		timing, measurement = reject_outliers(timing, measurement)
 
-	plt.plot(timing, measurement, 'k--', label='Ue', linewidth=3)
+	plt.plot(timing, measurement, '--^', label='Ue', linewidth=3)
 
 
 def plot_as_is(xs, ys, lw_offset=2.0):
 	plt.plot(xs[1], ys[1], 'b', label='Cell 1', linewidth=lw_offset + .6)  # 'ro'
 	plt.plot(xs[2], ys[2], 'r', label='Cell 2', linewidth=lw_offset + .4)  # 'b--'
 	plt.plot(xs[3], ys[3], 'c', label='Cell 3', linewidth=lw_offset + .2)
+
+
+def smooth(xs, ys):
+	N = len(xs) * 3
+
+	box_pts = 3
+	box = np.ones(box_pts)/box_pts
+	y_smooth = np.convolve(ys, box, mode='same')
+    
+	return xs, y_smooth
 
 
 def main():
@@ -118,15 +130,24 @@ def main():
 			measurements[i] = spline(timings[i], measurements[i], xnew[i])
 		timings = xnew"""
 
+	if "--smooth" in sys.argv:
+		timings[1], measurements[1] = smooth(timings[1], measurements[1])
+		timings[2], measurements[2] = smooth(timings[2], measurements[2])
+		timings[3], measurements[3] = smooth(timings[3], measurements[3])
+
 	plot_as_is(timings, measurements)
 
 	if "--ue" in sys.argv:
 		plot_comp_ue_measures(may_rm_outliers)
 
 	mmin, mmax = find_bounds(measurements)
-	delta = int(float(mmax - mmin) / 100.0)
+	ydelta = abs(float(mmax - mmin) / 10.0)
 
-	plt.ylim((mmin - 2, mmax + 2))
+	xmin, xmax = find_bounds(timings)
+	xdelta = abs(float(xmin - xmax) / 30.0)
+
+	plt.ylim((mmin - ydelta, mmax + ydelta))
+	plt.xlim((xmin - xdelta, xmax + xdelta))
 	plt.legend(loc=4)
 	plt.grid(True)
 	plt.xlabel('Time [s]')
