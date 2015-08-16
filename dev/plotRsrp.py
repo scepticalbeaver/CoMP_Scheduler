@@ -5,8 +5,6 @@ import sys
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.interpolate as ip
-import scipy.fftpack
 
 
 def reject_outliers_at(x_vals, y_vals, m, beg, end):
@@ -91,7 +89,7 @@ def plot_comp_ue_measures(may_rm_outliers=False):
 	if may_rm_outliers:
 		timing, measurement = reject_outliers(timing, measurement)
 
-	plt.plot(timing, measurement, '--^', label='Ue', linewidth=3)
+	plt.plot(timing, measurement, 'k--', label='Ue', linewidth=3.1)
 
 
 def plot_as_is(xs, ys, lw_offset=2.0):

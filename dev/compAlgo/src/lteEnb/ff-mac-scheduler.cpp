@@ -5,28 +5,58 @@
 
 #include "x2-channel.h"
 #include "../simulator.h"
+#include "wma-comp-algo.h"
 
-FfMacScheduler::FfMacScheduler(int cellId)
+FfMacScheduler::FfMacScheduler(CellId cellId)
   : mCellId(cellId)
   , mIsLeader(false)
-  , mWindowDuration(Converter::milliseconds(16))
+  , mWindowDuration(Converter::milliseconds(20))
   , mDirectParticipantCellId(-1)
   , mIsDirectParticipant(false)
   , mLeaderCellId(-1)
+  , mCompAlgo(new WMACompAlgo(&mCsiHistory))
+  , mLastScheduledCellId(cellId)
 {
+}
+
+FfMacScheduler::FfMacScheduler(FfMacScheduler &&scheduler)
+  : mCellId(scheduler.mCellId)
+  , mIsLeader(scheduler.mIsLeader)
+  , mWindowDuration(scheduler.mWindowDuration)
+  , mDirectParticipantCellId(scheduler.mDirectParticipantCellId)
+  , mIsDirectParticipant(scheduler.mIsDirectParticipant)
+  , mLeaderCellId(scheduler.mLeaderCellId)
+  , mCsiHistory(std::move(scheduler.mCsiHistory))
+  , mMacSapUser(scheduler.mMacSapUser)
+  , mCompAlgo(std::move(scheduler.mCompAlgo))
+  , mInternalEvents(std::move(scheduler.mInternalEvents))
+  , mScheduledDirectCellId(scheduler.mScheduledDirectCellId)
+  , mLastScheduledCellId(scheduler.mLastScheduledCellId)
+  , mlCellSwitchWatch(scheduler.mlCellSwitchWatch)
+  , mlHistoryLenCounter(std::move(scheduler.mlHistoryLenCounter))
+{
+  mCompAlgo->setJournal(&mCsiHistory);
 }
 
 FfMacScheduler::~FfMacScheduler()
 {
-  if (mIsLeader || mCellSwitchCounter)
+  if (mIsLeader || mlCellSwitchCounter)
     {
       LOG("MAC scheduler cell-switch statistics:");
-      LOG("\tintervals between switch [ms]:");
+      LOG("\tIntervals between switch [ms]:");
 
-      LOG("\tave: " << mCellSwitchWatch.average(mCellSwitchIndex) / 1000.0
-          << "\tmin: "<< mCellSwitchWatch.minimum(mCellSwitchIndex) / 1000.0
-          << "\tmax: " << mCellSwitchWatch.maximum(mCellSwitchIndex) / 1000.0
-          << "\tTotal switches: " << mCellSwitchCounter);
+      LOG("\tave: " << mlCellSwitchWatch.average(mlCellSwitchIndex) / 1000.0
+          << "\tmin: "<< mlCellSwitchWatch.minimum(mlCellSwitchIndex) / 1000.0
+          << "\tmax: " << mlCellSwitchWatch.maximum(mlCellSwitchIndex) / 1000.0
+          << "\tTotal switches: " << mlCellSwitchCounter);
+
+
+      LOG("\tCell measurements history length on decision moment:\n\taverage per cell:");
+      for (auto &cellHistoryStats : mlHistoryLenCounter)
+        {
+          double average = cellHistoryStats.second.first / (cellHistoryStats.second.second + 0.0);
+          LOG("\tid = " << cellHistoryStats.first << " : " << average);
+        }
     }
 }
 
@@ -179,11 +209,11 @@ void FfMacScheduler::switchDirectCell(int cellId)
   mLastScheduledCellId = cellId;
   mLastSwichTime = currentTime;
   // logging
-  if (mCellSwitchCounter++ != 0)
+  if (mlCellSwitchCounter++ != 0)
     {
-      mCellSwitchWatch.stop(mCellSwitchIndex, currentTime);
+      mlCellSwitchWatch.stop(mlCellSwitchIndex, currentTime);
     }
-  mCellSwitchWatch.start(mCellSwitchIndex, currentTime);
+  mlCellSwitchWatch.start(mlCellSwitchIndex, currentTime);
 }
 
 
@@ -211,59 +241,21 @@ void FfMacScheduler::enqueueTxStop(Time stop, int scheduledDirectCellId)
 
 void FfMacScheduler::processREChanges()
 {
-  if (SimTimeProvider::getTime() > mLastSwichTime + Converter::milliseconds(1))
-    movingAverageDecisionAlgo();
-}
-
-// Algo examples
-
-void FfMacScheduler::simpleDecisionAlgo()
-{
-  const Time currentTime = SimTimeProvider::getTime();
-  if (currentTime > Converter::seconds(3) && currentTime < Converter::seconds(6) && mDirectParticipantCellId != 2)
-    switchDirectCell(2);
-  else if (currentTime > Converter::seconds(6) && mDirectParticipantCellId != 3)
-    switchDirectCell(3);
-}
-
-void FfMacScheduler::movingAverageDecisionAlgo() // weighted
-{
-  int cellIdNext = mDirectParticipantCellId;
-
-  double aveProbes = 0;
-  std::map<int, double> signalLvl;
-  for (const auto &csiPair : mCsiHistory)
-    {
-      const size_t len = csiPair.second.size();
-      int64_t signalSum = 0;
-      for (size_t i = 0; i < len; i++)
-        {
-          signalSum += (i + 1) * csiPair.second[i].second;
-        }
-
-      double aveSignal = (signalSum + 0.0) / ((1 + len) * len / 2); // WMA
-      signalLvl.insert(std::make_pair(csiPair.first, aveSignal));
-
-      aveProbes += csiPair.second.size();
-    }
-
-  aveProbes /= mCsiHistory.size();
-  if (aveProbes < 3.0)
+  if (SimTimeProvider::getTime() < mLastSwichTime + Converter::milliseconds(1))
     return;
 
-  double maxSignal = signalLvl[mDirectParticipantCellId];
-  for (const auto &cellSignalPair : signalLvl)
+  for (const auto &cellHistory : mCsiHistory)
     {
-      if (cellSignalPair.second > maxSignal + 0.6)
-        {
-          maxSignal = cellSignalPair.second;
-          cellIdNext = cellSignalPair.first;
-        }
+      const auto sumOfLen = mlHistoryLenCounter[cellHistory.first].first + cellHistory.second.size();
+      const auto counts = mlHistoryLenCounter[cellHistory.first].second + 1;
+      mlHistoryLenCounter[cellHistory.first] = std::make_pair(sumOfLen, counts);
     }
+
+  int cellIdNext = mCompAlgo->redefineBestCell(mDirectParticipantCellId);
 
   if (cellIdNext != mLastScheduledCellId)
     {
-      LOG("@" << SimTimeProvider::getTime()
+      DEBUG("@" << SimTimeProvider::getTime()
           << "  cell switch from " << mLastScheduledCellId << " to " << cellIdNext);
       switchDirectCell(cellIdNext);
     }

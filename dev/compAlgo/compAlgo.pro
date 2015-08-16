@@ -27,10 +27,12 @@ SOURCES += src/main.cpp \
 HEADERS += \
     src/helpers.h \
     src/simulator.h \
+    src/messages.h \
     src/lteEnb/l2-mac.h \
     src/lteEnb/x2-channel.h \
     src/lteEnb/ff-mac-scheduler.h \
     src/lteEnb/ff-mac-sched-sap.h \
-    src/messages.h
+    src/lteEnb/icomp-decision-algo.h \
+    src/lteEnb/wma-comp-algo.h
 
 

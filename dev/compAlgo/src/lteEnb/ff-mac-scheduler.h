@@ -1,16 +1,15 @@
 #pragma once
 
-#include <map>
-#include <queue>
-
 #include "../helpers.h"
 #include "ff-mac-sched-sap.h"
+#include "icomp-decision-algo.h"
 
 
 class FfMacScheduler
 {
 public:
-  FfMacScheduler(int cellId);
+  FfMacScheduler(CellId cellId);
+  FfMacScheduler(FfMacScheduler &&scheduler);
   ~FfMacScheduler();
   void setLeader(int cellId);
   void setFfMacSchedSapUser(FfMacSchedSapUser *user);
@@ -35,9 +34,7 @@ private:
 
   FfMacSchedSapUser *mMacSapUser = nullptr;
 
-  TimeMeasurement mCellSwitchWatch;
-  size_t mCellSwitchCounter = 0;
-  const std::string mCellSwitchIndex = "switchDirectCell";
+  UniqCompSchedulingAlgo mCompAlgo;
 
   void setTimeout(Time when);
   enum class SchedulerEvent
@@ -49,19 +46,26 @@ private:
 
   std::map<Time, std::queue<SchedulerEvent>> mInternalEvents;
   std::map<Time, int> mScheduledDirectCellId;
-  int mLastScheduledCellId = mCellId;
+  int mLastScheduledCellId;
   Time mLastSwichTime = Converter::milliseconds(0);
+
+
+  //- Logging stuff -----------------------------------------
+  TimeMeasurement mlCellSwitchWatch;
+  size_t mlCellSwitchCounter = 0;
+  const std::string mlCellSwitchIndex = "switchDirectCell";
+
+  std::map<int, std::pair<size_t, uint64_t>> mlHistoryLenCounter; //< (value history len sum, number of probes)
+
+
+  //----------------------------------------------------------
 
   void enqueueTx(Time start);
   void enqueueTxStop(Time stop, int scheduledDirectCellId);
 
 
-
   void processREChanges();
   void switchDirectCell(int cellId);
-
-  void simpleDecisionAlgo();
-  void movingAverageDecisionAlgo();
 };
 
 

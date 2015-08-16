@@ -7,6 +7,7 @@
 using Time = uint64_t;
 using CsiUnit = std::pair<Time, int>; //< time of measurements received, rsrp
 
+using CellId = int;
 
 struct DlRlcPacket
 {
@@ -15,7 +16,7 @@ struct DlRlcPacket
 
 struct CSIMeasurementReport
 {
-  int targetCellId;
+  CellId targetCellId;
   CsiUnit csi;
 };
 
@@ -32,7 +33,7 @@ struct X2Message
   CSIMeasurementReport report;
   bool mustSendTraffic;
   Time applyDirectMembership;
-  int leaderCellId;
+  CellId leaderCellId;
 };
 
 
@@ -50,7 +51,7 @@ struct Event
 {
   EventType eventType;
   Time atTime;
-  int cellId;
+  CellId cellId;
 
   DlRlcPacket packet;
   CSIMeasurementReport report;

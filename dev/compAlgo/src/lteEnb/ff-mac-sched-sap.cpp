@@ -46,7 +46,7 @@ int FfMacSchedSapUser::getDirectCellId()
   const bool peek = true;
   std::vector<int> decisions {getDciDecision(1, peek), getDciDecision(2, peek), getDciDecision(3, peek)};
   int cellId = -1;
-  for (int i = 0; i < decisions.size(); i++)
+  for (unsigned int i = 0; i < decisions.size(); i++)
     {
       int decision = decisions[i];
       if (!decision)

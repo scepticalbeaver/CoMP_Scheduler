@@ -10,7 +10,12 @@ gnuplot -p testsDir/build/debug/bin/enbs.txt testsDir/build/debug/bin/ues.txt  r
 echo "Radio environment plot done. See 'SceneX.png'"
 
 cd compAlgo
-./build/debug/bin/compAlgo
+echo "Compiling CoMP simulation app"
+qmake DEFINES+="NDEBUG" && make -j4 --quiet || exit 1
+echo "" && echo ""
+
+./build/release/bin/compAlgo || (echo "Simulation failed" && exit 1)
+make --quiet clean
 cd ..
 echo "Simulation finished"
 

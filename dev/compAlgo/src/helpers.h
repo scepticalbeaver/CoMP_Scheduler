@@ -12,6 +12,15 @@
 #define ERR(x)  std::cerr << "err: " << x << "\n"; \
                 assert(false);
 
+#ifndef NDEBUG
+    #define DEBUG(x) do { std::cerr << "DEBUG: " << x << "\n"; } while (false)
+    #define DEBUG2(x) do { std::cerr << "DEBUG: " << __func__ << ":" << #x << ": " << x << "\n"; } while (false)
+#else
+    #define DEBUG(x) do {} while (false)
+    #define DEBUG2(x) do {} while(false)
+#endif
+
+
 class Converter
 {
 public:
