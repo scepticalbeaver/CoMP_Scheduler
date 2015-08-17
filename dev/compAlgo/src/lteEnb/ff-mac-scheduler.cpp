@@ -10,7 +10,7 @@
 FfMacScheduler::FfMacScheduler(CellId cellId)
   : mCellId(cellId)
   , mIsLeader(false)
-  , mWindowDuration(Converter::milliseconds(20))
+  , mWindowDuration(Converter::milliseconds(16))
   , mDirectParticipantCellId(-1)
   , mIsDirectParticipant(false)
   , mLeaderCellId(-1)
@@ -26,6 +26,7 @@ FfMacScheduler::FfMacScheduler(FfMacScheduler &&scheduler)
   , mDirectParticipantCellId(scheduler.mDirectParticipantCellId)
   , mIsDirectParticipant(scheduler.mIsDirectParticipant)
   , mLeaderCellId(scheduler.mLeaderCellId)
+  , mCompGroup(std::move(scheduler.mCompGroup))
   , mCsiHistory(std::move(scheduler.mCsiHistory))
   , mMacSapUser(scheduler.mMacSapUser)
   , mCompAlgo(std::move(scheduler.mCompAlgo))
@@ -80,6 +81,12 @@ void FfMacScheduler::setLeader(int cellId)
       X2Channel::instance()->send(-1, message);
     }
   schedDlTriggerReq();
+}
+
+void FfMacScheduler::setCompGroup(std::initializer_list<CellId> list)
+{
+  for (auto &cell : list)
+    mCompGroup.push_back(cell);
 }
 
 void FfMacScheduler::setFfMacSchedSapUser(FfMacSchedSapUser *user)
@@ -170,6 +177,8 @@ void FfMacScheduler::onTimeout()
 
 void FfMacScheduler::switchDirectCell(int cellId)
 {
+  assert(std::find(mCompGroup.begin(), mCompGroup.end(), cellId) != mCompGroup.end());
+
   Time currentTime = SimTimeProvider::getTime();
   Time applyChanges = currentTime + X2Channel::instance()->getLatency() + Converter::microseconds(10);
   // switch traffic OFF at old cell
@@ -226,6 +235,7 @@ void FfMacScheduler::setTimeout(Time when)
 
 void FfMacScheduler::enqueueTx(Time start)
 {
+  assert(start >= SimTimeProvider::getTime());
   mInternalEvents[start].push(SchedulerEvent::startTx);
   setTimeout(start);
 }
@@ -251,7 +261,7 @@ void FfMacScheduler::processREChanges()
       mlHistoryLenCounter[cellHistory.first] = std::make_pair(sumOfLen, counts);
     }
 
-  int cellIdNext = mCompAlgo->redefineBestCell(mDirectParticipantCellId);
+  int cellIdNext = mCompAlgo->redefineBestCell(mLastScheduledCellId);
 
   if (cellIdNext != mLastScheduledCellId)
     {

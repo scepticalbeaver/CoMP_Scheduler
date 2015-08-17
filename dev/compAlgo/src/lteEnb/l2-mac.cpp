@@ -40,6 +40,8 @@ L2Mac::~L2Mac()
 void L2Mac::activateDlCompFeature()
 {
   mSchedulers.front().setLeader(true);
+  mSchedulers.front().setCompGroup({1, 2, 3});
+
   l2Timeout(-1);
 }
 

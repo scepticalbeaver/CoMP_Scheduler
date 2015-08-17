@@ -54,8 +54,8 @@ def load_measurements(filepath, used_to_same_cell_id=False):
 	rsrp_data = np.loadtxt(filepath, comments = '%')
 	# % 0time[usec]	1srcCellId	2targetCellId	3RSRP
 
-	timings = { 1 : [], 2 : [], 3 : []}
-	measurements = { 1 : [], 2 : [], 3 : []}
+	timings = { 1 : [], 2 : [], 3 : [], 11 : [], 12 : [], 13 : []}
+	measurements = { 1 : [], 2 : [], 3 : [], 11 : [], 12 : [], 13 : []}
 
 	for i in range(rsrp_data.shape[0]):
 		time = float(rsrp_data[i, 0]) / 1000 / 1000 # into [sec]
@@ -93,10 +93,14 @@ def plot_comp_ue_measures(may_rm_outliers=False):
 
 
 def plot_as_is(xs, ys, lw_offset=2.0):
-	plt.plot(xs[1], ys[1], 'b', label='Cell 1', linewidth=lw_offset + .6)  # 'ro'
-	plt.plot(xs[2], ys[2], 'r', label='Cell 2', linewidth=lw_offset + .4)  # 'b--'
-	plt.plot(xs[3], ys[3], 'c', label='Cell 3', linewidth=lw_offset + .2)
+	width_offset = 0.6
+	colors = { 1 : 'b', 2 : 'r', 3 : 'c', 11 : 'b--', 12 : 'r--', 13 : 'c--' }
 
+	for i in xs:
+		if len(xs[i]) == 0:
+			continue
+		plt.plot(xs[i], ys[i], colors[i], label='Cell ' + str(i), linewidth=lw_offset + width_offset)  # 'ro', 'b--'
+		width_offset -= .2
 
 def smooth(xs, ys):
 	N = len(xs) * 3
@@ -109,7 +113,10 @@ def smooth(xs, ys):
 
 
 def main():
-	timings, measurements = load_measurements("compAlgo/input/measurements.log")
+	filepath = "compAlgo/input/measurements.log"
+	if "--scores" in sys.argv:
+		filepath = "compAlgo/output/moving_score.log"
+	timings, measurements = load_measurements(filepath)
 
 	if "--row" in sys.argv:
 		plot_as_is(timings, measurements, 0.1)
@@ -145,14 +152,17 @@ def main():
 	xdelta = abs(float(xmin - xmax) / 30.0)
 
 	plt.ylim((mmin - ydelta, mmax + ydelta))
-	plt.xlim((xmin - xdelta, xmax + xdelta))
+	
 	plt.legend(loc=4)
 	plt.grid(True)
 	plt.xlabel('Time [s]')
 	plt.ylabel('RSRP')
 	plt.suptitle('CSI')
 
-	plt.savefig("measurements_plot.png")
+	plt.xlim((1.15, 2.15))
+	plt.savefig("measurements_plot.png", dpi = 160)
+
+	plt.xlim((xmin - xdelta, xmax + xdelta))
 	
 	if "--show" in sys.argv:
 		plt.show()

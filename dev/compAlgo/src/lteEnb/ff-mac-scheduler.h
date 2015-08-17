@@ -1,5 +1,7 @@
 #pragma once
 
+#include <initializer_list>
+
 #include "../helpers.h"
 #include "ff-mac-sched-sap.h"
 #include "icomp-decision-algo.h"
@@ -12,6 +14,7 @@ public:
   FfMacScheduler(FfMacScheduler &&scheduler);
   ~FfMacScheduler();
   void setLeader(int cellId);
+  void setCompGroup(std::initializer_list<CellId> list);
   void setFfMacSchedSapUser(FfMacSchedSapUser *user);
 
   void setTrafficActivity(bool mustSend, Time applyTime);
@@ -28,6 +31,8 @@ private:
   int mDirectParticipantCellId;
   bool mIsDirectParticipant;
   int mLeaderCellId;
+
+  std::vector<CellId> mCompGroup = {};
 
   using CsiArray = std::deque<CsiUnit>;
   std::map<int, CsiArray> mCsiHistory;
