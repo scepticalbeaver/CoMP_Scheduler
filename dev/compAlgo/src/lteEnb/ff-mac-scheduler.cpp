@@ -5,16 +5,17 @@
 
 #include "x2-channel.h"
 #include "../simulator.h"
-#include "wma-comp-algo.h"
+#include "ma-comp-algo.h"
+#include "kama-comp-algo.h"
 
 FfMacScheduler::FfMacScheduler(CellId cellId)
   : mCellId(cellId)
   , mIsLeader(false)
-  , mWindowDuration(Converter::milliseconds(16))
   , mDirectParticipantCellId(-1)
   , mIsDirectParticipant(false)
   , mLeaderCellId(-1)
-  , mCompAlgo(new WMACompAlgo(&mCsiHistory))
+  , mCompAlgo(new KamaCompAlgo(&mCsiHistory))
+//  , mCompAlgo(new MaCompAlgo(&mCsiHistory, MaCompAlgo::weightedMovingAverage))
   , mLastScheduledCellId(cellId)
 {
 }
@@ -22,7 +23,6 @@ FfMacScheduler::FfMacScheduler(CellId cellId)
 FfMacScheduler::FfMacScheduler(FfMacScheduler &&scheduler)
   : mCellId(scheduler.mCellId)
   , mIsLeader(scheduler.mIsLeader)
-  , mWindowDuration(scheduler.mWindowDuration)
   , mDirectParticipantCellId(scheduler.mDirectParticipantCellId)
   , mIsDirectParticipant(scheduler.mIsDirectParticipant)
   , mLeaderCellId(scheduler.mLeaderCellId)
@@ -139,11 +139,16 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
     return;
 
   array.push_back(csi);
-  while (array.back().first - array.front().first > mWindowDuration)
+  const size_t maxValuesAmount = 100;
+  while (array.size() > maxValuesAmount)
     array.pop_front();
 
+
   if (SimTimeProvider::getTime() > Converter::milliseconds(150))
-    processREChanges();
+    {
+      mCompAlgo->update(tCellId);
+      processREChanges();
+    }
 }
 
 void FfMacScheduler::onTimeout()

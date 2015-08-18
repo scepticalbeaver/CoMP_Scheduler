@@ -27,7 +27,6 @@ public:
 private:
   int const mCellId;
   bool mIsLeader;
-  Time mWindowDuration;
   int mDirectParticipantCellId;
   bool mIsDirectParticipant;
   int mLeaderCellId;

@@ -29,11 +29,15 @@ public:
     mMovingScoreLogger.close();
   }
 
+  virtual void update(CellId cellId) = 0;
   virtual CellId redefineBestCell(CellId lastScheduled) = 0;
 
 protected:
     CsiJournal* mCsiJournal;
     std::fstream mMovingScoreLogger;
+
+    Time mWindowDuration = Converter::milliseconds(0);
+    size_t mWindowSize = 0;
 
 
     bool isLastOutlier(CellId cellId)
@@ -64,12 +68,24 @@ protected:
       return diffs.back() / diffsMedian > order;
     }
 
-    void writeScore(CellId cellId, double val, double rawValue)
+    void writeScore(CellId cellId, double aveValue, double rawValue)
     {
       mMovingScoreLogger << SimTimeProvider::getTime() << "\t" << cellId << "\t" << cellId << "\t"
                          << rawValue << "\n";
       mMovingScoreLogger << SimTimeProvider::getTime() << "\t" << cellId + 10 << "\t" << cellId + 10
-                         << "\t" << val << "\n";
+                         << "\t" << aveValue << "\n";
+    }
+
+    void removeOldValues()
+    {
+      assert(mWindowDuration || mWindowSize);
+      for (auto &csiPair : *mCsiJournal)
+        {
+          CsiArray &array = csiPair.second;
+          while ((mWindowDuration && array.back().first - array.front().first > mWindowDuration)
+                 || (mWindowSize && array.size() > mWindowSize))
+            array.pop_front();
+        }
     }
 };
 
