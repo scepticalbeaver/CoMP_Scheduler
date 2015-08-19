@@ -1,6 +1,7 @@
 #include "kama-indicator.h"
 
 #include <math.h>
+#include <algorithm>
 
 KamaIndicator::KamaIndicator(CsiJournalPtr j)
   : ITrendIndicator(j)
@@ -78,8 +79,8 @@ double KamaIndicator::minmaxAmaLatest(CellId cellId, bool useMin)
   const auto size = array.size();
   const auto dsize = deltaArray.size();
 
-  auto left = std::max(size - s, 0ul);
-  auto dleft = std::max(dsize - s + 1, 0ul);
+  auto left = std::max(int64_t(size) - s, int64_t(0));
+  auto dleft = std::max(int64_t(dsize) - s + 1, int64_t(0));
 
   std::function<bool(double, double)> compBeforeZero;
   if (useMin)
@@ -94,7 +95,7 @@ double KamaIndicator::minmaxAmaLatest(CellId cellId, bool useMin)
     compAfterZero = std::less<double>();
 
   size_t offset = 0;
-  for (auto i = dleft; i < dsize - 1; i++)
+  for (size_t i = dleft; i < dsize - 1; i++)
     {
       if (compBeforeZero(deltaArray[i], 0.0) && compAfterZero(deltaArray[i + 1], 0.0))
         offset = i - dleft;

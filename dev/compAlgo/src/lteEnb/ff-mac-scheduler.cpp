@@ -1,7 +1,6 @@
 #include "ff-mac-scheduler.h"
 
 #include <algorithm>
-#include <functional>
 
 #include "x2-channel.h"
 #include "../simulator.h"

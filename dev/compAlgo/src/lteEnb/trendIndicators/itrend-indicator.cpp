@@ -8,24 +8,67 @@ ITrendIndicator::ITrendIndicator(CsiJournalPtr j)
 
 void ITrendIndicator::update(CellId cellId)
 {
+  if (mIsShadowValueUsed)
+    {
+      if (!mWeightedSignals[cellId].empty())
+        mWeightedSignals[cellId].pop_back();
+      if (!mWValuesDiffs[cellId].empty())
+        mWValuesDiffs[cellId].pop_front();
+      if (!mSignalDiffs[cellId].empty())
+        mSignalDiffs[cellId].pop_front();
+      mIsShadowValueUsed = false;
+    }
+
   updateSignalDiffs(cellId);
   auto value = updateHook(cellId);
   updateWeightedJournal(cellId, value);
   updateWeightedValuesDiffs(cellId);
+
+  if (mApplyAnalysOnForecast)
+    {
+      if (!mIsShadowValueUsed)
+        {
+          // add shadow value
+          auto shadowVal = forecast(cellId);
+          mWeightedSignals[cellId].push_back(shadowVal);
+          updateWeightedValuesDiffs(cellId);
+          mSignalDiffs[cellId].push_back(mWValuesDiffs[cellId].back());
+          mIsShadowValueUsed = true;
+        }
+      else
+        {
+          assert(false);
+        }
+    }
 }
 
 double ITrendIndicator::lastValueFor(CellId cellId)
 {
   if (mWeightedSignals[cellId].empty())
-    return 0.0;
+    {
+      if (mCsiJournal->at(cellId).size())
+        return mCsiJournal->at(cellId).back().second;
+      else
+        return 0.0;
+    }
   return mWeightedSignals[cellId].back();
 }
 
 double ITrendIndicator::forecast(CellId cellId)
 {
   double delta = 0.0;
-  if (isFadingTrend(cellId))
-    delta = 2 * mWValuesDiffs[cellId].back();
+  if (isFadingTrend(cellId) || isRisingTrend(cellId))
+    delta = 1.2 * mWValuesDiffs[cellId].back();
+  else
+    {
+      const auto size = mWValuesDiffs[cellId].size();
+      if (size >= 2)
+        delta = 0.5 * (mWValuesDiffs[cellId].back() + mWValuesDiffs[cellId][size - 2]);
+      else if (size == 1)
+        delta = 0.7 * mWValuesDiffs[cellId].back();
+      else if (!size)
+        delta = 0;
+    }
 
   return lastValueFor(cellId) + delta;
 }
@@ -54,7 +97,7 @@ bool ITrendIndicator::isFadingTrend(CellId cellId, bool useFading)
 
   if (size == 2)
     return f(mWValuesDiffs[cellId][size - 1], mWValuesDiffs[cellId][size - 2] + eps);
-  else if (size == 1)
+  else if (size <= 1)
     return false;
 
   for (int i = 0; i < 2; i++)

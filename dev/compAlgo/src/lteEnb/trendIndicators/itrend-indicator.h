@@ -1,9 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <functional>
-#include <memory>
-
 #include "../../helpers.h"
 
 class ITrendIndicator
@@ -12,6 +8,7 @@ public:
   ITrendIndicator(CsiJournalPtr j);
 
   void setJournal(CsiJournalPtr j) { mCsiJournal = j; }
+  void setPreventiveAnalysis(bool value) { mApplyAnalysOnForecast = value; }
 
   void update(CellId cellId);
   virtual double lastValueFor(CellId cellId);
@@ -35,6 +32,8 @@ public:
 protected:
   const double crossHysteresis = 0.2;
   CsiJournalPtr mCsiJournal;
+  bool mApplyAnalysOnForecast = false;
+  bool mIsShadowValueUsed = false;
 
   Time mWindowDuration = Converter::milliseconds(0);
   size_t mWindowSize = 0;

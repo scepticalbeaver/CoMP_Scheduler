@@ -13,7 +13,7 @@ public:
 
   WmaIndicator(CsiJournalPtr j, MovingAverageAlgo type = weightedMovingAverage);
 
-  bool isLastOutlier(CellId cellId);
+  bool isLastOutlier(CellId cellId, size_t lPointer = 0);
 
 private:
   WmaIndicator(const WmaIndicator&) = delete;

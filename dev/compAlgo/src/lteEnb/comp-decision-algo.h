@@ -1,10 +1,6 @@
 #pragma once
 
-#include <map>
-#include <queue>
-#include <memory>
 #include <fstream>
-
 
 #include "../helpers.h"
 #include "trendIndicators/wma-indicator.h"
@@ -16,8 +12,8 @@ class CompSchedulingAlgo
 public:
   CompSchedulingAlgo(CsiJournalPtr j, CellIdVectorPtr compGroup);
 
-  void setJournal(CsiJournalPtr j) { assert(mCsiJournal = j); }
-  void setCompGroup(CellIdVectorPtr cg) { assert(mCompGroup = cg); }
+  void setJournal(CsiJournalPtr j);
+  void setCompGroup(CellIdVectorPtr cg);
 
   ~CompSchedulingAlgo();
 
@@ -40,6 +36,13 @@ private:
     void removeOldValues();
 
     bool haveTooLittleValues();
+
+    CellId predictorPureRawForecast(CellId lastScheduled);
+
+    CellId predictorWeightedForecast(CellId lastScheduled);
+    double weightedLastValue(CellId cellId);
+    double weightedForecast(CellId cellId);
+
 };
 
 using UniqCompSchedulingAlgo = std::unique_ptr<CompSchedulingAlgo>;
