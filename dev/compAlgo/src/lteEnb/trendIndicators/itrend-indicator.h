@@ -13,7 +13,7 @@ public:
   void update(CellId cellId);
   virtual double lastValueFor(CellId cellId);
 
-  double forecast(CellId cellId);
+  virtual double forecast(CellId cellId);
 
   virtual bool isUpgoingTrend(CellId cellId);
   virtual bool isDescendingTrend(CellId cellId);

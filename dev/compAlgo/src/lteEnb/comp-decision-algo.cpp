@@ -7,6 +7,7 @@ CompSchedulingAlgo::CompSchedulingAlgo(CsiJournalPtr j, CellIdVectorPtr compGrou
   , mCompGroup(compGroup)
   , mWmaIndicator(new WmaIndicator(j))
   , mKamaIndicator(new KamaIndicator(j))
+  , mInterpolation(new InterpolationIndicator(j))
 {
   assert(j && compGroup);
 
@@ -41,7 +42,8 @@ void CompSchedulingAlgo::update(CellId cellId)
   removeOldValues();
   mWmaIndicator->update(cellId);
   mKamaIndicator->update(cellId);
-  writeScore(cellId, weightedLastValue(cellId), mCsiJournal->at(cellId).back().second);
+//  writeScore(cellId, weightedLastValue(cellId), mCsiJournal->at(cellId).back().second);
+  writeScore(cellId, mInterpolation->forecast(cellId), mCsiJournal->at(cellId).back().second);
 }
 
 CellId CompSchedulingAlgo::predictorPureRawForecast(CellId lastScheduled)
@@ -73,7 +75,7 @@ CellId CompSchedulingAlgo::predictorPureRawForecast(CellId lastScheduled)
         signalForecast[cellId] = mKamaIndicator->lastValueFor(cellId);
 
       bool isQualityRises = mKamaIndicator->isCurrentBreaksUpwards(cellId);
-      bool isWmaBetter = mKamaIndicator->lastValueFor(cellId) > mKamaIndicator->lastValueFor(lastScheduled);
+      bool isWmaBetter = mKamaIndicator->forecast(cellId) > mKamaIndicator->forecast(lastScheduled);
       bool isCurForecastBetterScheduledSignificantly =
           signalForecast[cellId] > signalForecast[lastScheduled] + hysteresis * 9;
       bool isCurForecastBetterScheduled = signalForecast[cellId] > signalForecast[lastScheduled] + hysteresis;
@@ -96,7 +98,7 @@ CellId CompSchedulingAlgo::predictorPureRawForecast(CellId lastScheduled)
         {
           if (mKamaIndicator->forecast(cellId) > maxSignal)
             {
-              maxSignal = mKamaIndicator->lastValueFor(cellId);
+              maxSignal = mKamaIndicator->forecast(cellId);
               nextDecision = cellId;
             }
         }
@@ -107,6 +109,8 @@ CellId CompSchedulingAlgo::predictorPureRawForecast(CellId lastScheduled)
 
 CellId CompSchedulingAlgo::predictorWeightedForecast(CellId lastScheduled)
 {
+//  mKamaIndicator->setPreventiveAnalysis(false); // keep false
+//  mWmaIndicator->setPreventiveAnalysis(false);  // keep false
   const double hysteresis = .2;
 
   CellId nextDecision = lastScheduled;
@@ -155,6 +159,37 @@ CellId CompSchedulingAlgo::predictorWeightedForecast(CellId lastScheduled)
   return nextDecision;
 }
 
+CellId CompSchedulingAlgo::predictorInterpolationForecast(CellId lastScheduled)
+{
+  CellId nextDecision = lastScheduled;
+  double maxSignal = 0;
+  for (auto cellId : *mCompGroup)
+    {
+      auto forecast = mInterpolation->forecast(cellId);
+      if (forecast > maxSignal)
+        {
+          maxSignal = forecast;
+          nextDecision = cellId;
+        }
+    }
+  return nextDecision;
+}
+
+CellId CompSchedulingAlgo::predictorSimpleMaxValue(CellId lastScheduled)
+{
+  CellId nextDecision = lastScheduled;
+  double maxSignal = 0;
+  for (auto cellId : *mCompGroup)
+    {
+      if (mCsiJournal->at(cellId).back().second > maxSignal)
+        {
+          maxSignal = mCsiJournal->at(cellId).back().second;
+          nextDecision = cellId;
+        }
+    }
+  return nextDecision;
+}
+
 double CompSchedulingAlgo::weightedLastValue(CellId cellId)
 {
   const auto effectRatio = mKamaIndicator->efficiencyRatio();
@@ -173,9 +208,8 @@ double CompSchedulingAlgo::weightedForecast(CellId cellId)
 
 CellId CompSchedulingAlgo::redefineBestCell(CellId lastScheduled)
 {
-  CellId nextDecision = predictorWeightedForecast(lastScheduled);
+  return predictorInterpolationForecast(lastScheduled);
 
-  return nextDecision;
 }
 
 

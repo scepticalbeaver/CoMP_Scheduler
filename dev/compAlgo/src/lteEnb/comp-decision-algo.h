@@ -5,6 +5,7 @@
 #include "../helpers.h"
 #include "trendIndicators/wma-indicator.h"
 #include "trendIndicators/kama-indicator.h"
+#include "trendIndicators/interpolation-indicator.h"
 
 
 class CompSchedulingAlgo
@@ -30,6 +31,8 @@ private:
 
     UniqWmaIndicator mWmaIndicator;
     UniqKamaIndicator mKamaIndicator;
+    UniqInterpolationIndicator mInterpolation;
+
 
 
     void writeScore(CellId cellId, double aveValue, double rawValue);
@@ -40,6 +43,11 @@ private:
     CellId predictorPureRawForecast(CellId lastScheduled);
 
     CellId predictorWeightedForecast(CellId lastScheduled);
+
+    CellId predictorInterpolationForecast(CellId lastScheduled);
+
+    CellId predictorSimpleMaxValue(CellId lastScheduled);
+
     double weightedLastValue(CellId cellId);
     double weightedForecast(CellId cellId);
 

@@ -138,6 +138,24 @@ void FfMacScheduler::schedDlCqiInfoReq(CellId tCellId, CsiUnit csi)
   if (csi.first < array.back().first) // drop older CSIs
     return;
 
+  if (csi.first == array.back().first)
+    {
+#ifndef NDEBUG
+      static int newLess = 0;
+      static int newGreater = 0;
+      static int newSame = 0;
+      if (csi.second > array.back().second)
+        newGreater++;
+      else if (csi.second < array.back().second)
+        newLess++;
+      else
+        newSame++;
+      if ((newLess + newGreater + newSame) % 100 == 99)
+        DEBUG("\t\t>>>>>> SAME\t\t" << csi.second << "\t" << array.back().second << "\t"
+              << "count less: " << newLess << "\tgreater: " << newGreater << "\tsame: " << newSame);
+#endif
+      return;
+    }
   array.push_back(csi);
   mCompAlgo->update(tCellId);
 

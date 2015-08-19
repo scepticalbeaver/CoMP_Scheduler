@@ -9,6 +9,7 @@ public:
   {
     weightedMovingAverage
     , simpleMovingMedian
+
   };
 
   WmaIndicator(CsiJournalPtr j, MovingAverageAlgo type = weightedMovingAverage);

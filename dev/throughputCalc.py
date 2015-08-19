@@ -14,7 +14,7 @@ def toThroughputKbps(bytes, seconds):
 #  RLC
 #-------------------------------------------------------------------------------
 def processRlcStats(filename, start_time, ignor_ui_id = False):
-	epochDuration = .100
+	epochDuration = .200
 	dlRlcKPIs = np.loadtxt(filename, comments = '%')
 	# rows: 0start 1end 2CellId 3IMSI 4RNTI 5LCID 6nTxPDUs 7TxBytes 8nRxPDUs 9RxBytes delay stdDev min max PduSize stdDev min max
 

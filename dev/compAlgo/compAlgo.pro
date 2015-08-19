@@ -18,11 +18,16 @@ DESTDIR = $$PWD/build/$$CONFIGURATION/bin/
 
 SOURCES += src/main.cpp \
     src/simulator.cpp \
+    src/helpers.cpp \
     src/lteEnb/l2-mac.cpp \
     src/lteEnb/x2-channel.cpp \
     src/lteEnb/ff-mac-scheduler.cpp \
-    src/helpers.cpp \
-    src/lteEnb/ff-mac-sched-sap.cpp
+    src/lteEnb/ff-mac-sched-sap.cpp \
+    src/lteEnb/trendIndicators/wma-indicator.cpp \
+    src/lteEnb/trendIndicators/kama-indicator.cpp \
+    src/lteEnb/trendIndicators/itrend-indicator.cpp \
+    src/lteEnb/comp-decision-algo.cpp \
+    src/lteEnb/trendIndicators/interpolation-indicator.cpp
 
 HEADERS += \
     src/helpers.h \
@@ -32,7 +37,10 @@ HEADERS += \
     src/lteEnb/x2-channel.h \
     src/lteEnb/ff-mac-scheduler.h \
     src/lteEnb/ff-mac-sched-sap.h \
-    src/lteEnb/icomp-decision-algo.h \
-    src/lteEnb/wma-comp-algo.h
+    src/lteEnb/trendIndicators/wma-indicator.h \
+    src/lteEnb/trendIndicators/kama-indicator.h \
+    src/lteEnb/trendIndicators/itrend-indicator.h \
+    src/lteEnb/comp-decision-algo.h \
+    src/lteEnb/trendIndicators/interpolation-indicator.h
 
 
