@@ -3,11 +3,19 @@
 #include <string>
 #include <queue>
 #include <deque>
+#include <map>
+#include <memory>
 
 using Time = uint64_t;
 using CsiUnit = std::pair<Time, int>; //< time of measurements received, rsrp
+using CsiArray = std::deque<CsiUnit>;
 
 using CellId = int;
+using CellIdVector = std::vector<CellId>;
+using CellIdVectorPtr = std::shared_ptr<CellIdVector>;
+
+using CsiJournal = std::map<CellId, CsiArray>;
+using CsiJournalPtr = std::shared_ptr<CsiJournal>;
 
 struct DlRlcPacket
 {

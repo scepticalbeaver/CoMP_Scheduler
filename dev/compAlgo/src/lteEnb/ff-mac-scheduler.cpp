@@ -5,8 +5,6 @@
 
 #include "x2-channel.h"
 #include "../simulator.h"
-#include "ma-comp-algo.h"
-#include "kama-comp-algo.h"
 
 FfMacScheduler::FfMacScheduler(CellId cellId)
   : mCellId(cellId)
@@ -14,8 +12,7 @@ FfMacScheduler::FfMacScheduler(CellId cellId)
   , mDirectParticipantCellId(-1)
   , mIsDirectParticipant(false)
   , mLeaderCellId(-1)
-  , mCompAlgo(new KamaCompAlgo(&mCsiHistory))
-//  , mCompAlgo(new MaCompAlgo(&mCsiHistory, MaCompAlgo::weightedMovingAverage))
+  , mCompAlgo(new CompSchedulingAlgo(mCsiHistory, mCompGroup))
   , mLastScheduledCellId(cellId)
 {
 }
@@ -36,7 +33,8 @@ FfMacScheduler::FfMacScheduler(FfMacScheduler &&scheduler)
   , mlCellSwitchWatch(scheduler.mlCellSwitchWatch)
   , mlHistoryLenCounter(std::move(scheduler.mlHistoryLenCounter))
 {
-  mCompAlgo->setJournal(&mCsiHistory);
+  mCompAlgo->setJournal(mCsiHistory);
+  mCompAlgo->setCompGroup(mCompGroup);
 }
 
 FfMacScheduler::~FfMacScheduler()
@@ -61,7 +59,7 @@ FfMacScheduler::~FfMacScheduler()
     }
 }
 
-void FfMacScheduler::setLeader(int cellId)
+void FfMacScheduler::setLeader(CellId cellId)
 {
   mLeaderCellId = cellId;
 
@@ -86,7 +84,10 @@ void FfMacScheduler::setLeader(int cellId)
 void FfMacScheduler::setCompGroup(std::initializer_list<CellId> list)
 {
   for (auto &cell : list)
-    mCompGroup.push_back(cell);
+    {
+      mCompGroup->push_back(cell);
+      mCsiHistory->insert(std::make_pair(cell, CsiArray()));
+    }
 }
 
 void FfMacScheduler::setFfMacSchedSapUser(FfMacSchedSapUser *user)
@@ -107,7 +108,7 @@ void FfMacScheduler::schedDlTriggerReq()
   mMacSapUser->schedDlConfigInd(mCellId, {mIsDirectParticipant});
 }
 
-void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
+void FfMacScheduler::schedDlCqiInfoReq(CellId tCellId, CsiUnit csi)
 {
   if (!mIsLeader)
     {
@@ -128,25 +129,26 @@ void FfMacScheduler::schedDlCqiInfoReq(int tCellId, CsiUnit csi)
   // This cell is leader:
 
 
-  if (mCsiHistory[tCellId].empty())
+  if (mCsiHistory->at(tCellId).empty())
     {
-      mCsiHistory[tCellId].push_back(csi);
+      mCsiHistory->at(tCellId).push_back(csi);
       return;
     }
 
-  CsiArray& array = mCsiHistory[tCellId];
+  CsiArray& array = mCsiHistory->at(tCellId);
   if (csi.first < array.back().first) // drop older CSIs
     return;
 
   array.push_back(csi);
-  const size_t maxValuesAmount = 100;
+  mCompAlgo->update(tCellId);
+
+  const size_t maxValuesAmount = 50;
   while (array.size() > maxValuesAmount)
     array.pop_front();
 
 
   if (SimTimeProvider::getTime() > Converter::milliseconds(150))
     {
-      mCompAlgo->update(tCellId);
       processREChanges();
     }
 }
@@ -182,7 +184,7 @@ void FfMacScheduler::onTimeout()
 
 void FfMacScheduler::switchDirectCell(int cellId)
 {
-  assert(std::find(mCompGroup.begin(), mCompGroup.end(), cellId) != mCompGroup.end());
+  assert(std::find(mCompGroup->begin(), mCompGroup->end(), cellId) != mCompGroup->end());
 
   Time currentTime = SimTimeProvider::getTime();
   Time applyChanges = currentTime + X2Channel::instance()->getLatency() + Converter::microseconds(10);
@@ -259,7 +261,7 @@ void FfMacScheduler::processREChanges()
   if (SimTimeProvider::getTime() < mLastSwichTime + Converter::milliseconds(1))
     return;
 
-  for (const auto &cellHistory : mCsiHistory)
+  for (const auto &cellHistory : *mCsiHistory)
     {
       const auto sumOfLen = mlHistoryLenCounter[cellHistory.first].first + cellHistory.second.size();
       const auto counts = mlHistoryLenCounter[cellHistory.first].second + 1;

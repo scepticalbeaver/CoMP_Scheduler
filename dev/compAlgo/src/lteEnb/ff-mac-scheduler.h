@@ -4,7 +4,7 @@
 
 #include "../helpers.h"
 #include "ff-mac-sched-sap.h"
-#include "icomp-decision-algo.h"
+#include "comp-decision-algo.h"
 
 
 class FfMacScheduler
@@ -13,14 +13,14 @@ public:
   FfMacScheduler(CellId cellId);
   FfMacScheduler(FfMacScheduler &&scheduler);
   ~FfMacScheduler();
-  void setLeader(int cellId);
+  void setLeader(CellId cellId);
   void setCompGroup(std::initializer_list<CellId> list);
   void setFfMacSchedSapUser(FfMacSchedSapUser *user);
 
   void setTrafficActivity(bool mustSend, Time applyTime);
 
   void schedDlTriggerReq();
-  void schedDlCqiInfoReq(int tCellId, CsiUnit csi);
+  void schedDlCqiInfoReq(CellId tCellId, CsiUnit csi);
 
   void onTimeout();
 
@@ -31,10 +31,10 @@ private:
   bool mIsDirectParticipant;
   int mLeaderCellId;
 
-  std::vector<CellId> mCompGroup = {};
+  CellIdVectorPtr mCompGroup = std::make_shared<CellIdVector>();
 
   using CsiArray = std::deque<CsiUnit>;
-  std::map<int, CsiArray> mCsiHistory;
+  CsiJournalPtr mCsiHistory = std::make_shared<CsiJournal>();
 
   FfMacSchedSapUser *mMacSapUser = nullptr;
 
