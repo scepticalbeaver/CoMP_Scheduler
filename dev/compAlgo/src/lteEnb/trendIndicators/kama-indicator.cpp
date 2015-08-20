@@ -6,7 +6,7 @@
 KamaIndicator::KamaIndicator(CsiJournalPtr j)
   : ITrendIndicator(j)
 {
-    mWindowSize = s + 1; // at start
+    mWindowSize = std::max(n, s + 1); // at start
 }
 
 
