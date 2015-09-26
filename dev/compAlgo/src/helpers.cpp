@@ -15,7 +15,8 @@ void SimTimeProvider::setTime(Time newTime)
 
 void TimeMeasurement::start(const std::string &index)
 {
-  mStartTime[index] = std::chrono::high_resolution_clock::now();
+  mStartTime[index] = clock();
+//  mStartTime[index] = std::chrono::high_resolution_clock::now();
 }
 
 void TimeMeasurement::start(const std::string &index, Time time)
@@ -25,36 +26,23 @@ void TimeMeasurement::start(const std::string &index, Time time)
 
 void TimeMeasurement::stop(const std::string &index)
 {
-  mStopTime[index] = std::chrono::high_resolution_clock::now();
+  mStopTime[index] = clock(); // std::chrono::high_resolution_clock::now();
+//  uint64_t const elapsed =
+//      std::chrono::duration_cast<std::chrono::microseconds>(mStopTime[index] - mStartTime[index]).count();
+//  mStopTime[index] = clock();
   uint64_t const elapsed =
-      std::chrono::duration_cast<std::chrono::microseconds>(mStopTime[index] - mStartTime[index]).count();
+      static_cast<u_int64_t>(double(mStopTime[index] - mStartTime[index]) / CLOCKS_PER_SEC * 1000 * 1000);
 
-  mSumElapsed[index] += elapsed;
-  if (!mCounter[index] || elapsed > mMaxElapsed[index])
-    mMaxElapsed[index] = elapsed;
-
-  if (!mCounter[index] || elapsed < mMinElapsed[index])
-    mMinElapsed[index] = elapsed;
-
-  ++mCounter[index];
+  mStatistics.add(index, elapsed);
 }
 
 void TimeMeasurement::stop(const std::string &index, Time time)
 {
   mStopTimeManual[index] = time;
   auto const elapsed = mStopTimeManual[index] - mStartTimeManual[index];
-
-  mSumElapsed[index] += elapsed;
-  if (!mCounter[index] || elapsed > mMaxElapsed[index])
-    mMaxElapsed[index] = elapsed;
-
-  if (!mCounter[index] || elapsed < mMinElapsed[index])
-    mMinElapsed[index] = elapsed;
-
-  ++mCounter[index];
+  mStatistics.add(index, elapsed);
 }
 
-double TimeMeasurement::average(const std::string &index)
-{
-  return (mSumElapsed[index] + 0.0) / mCounter[index];
-}
+
+bool FileLogger::mInitiated = false;
+std::fstream FileLogger::mConcreteFileLogger;

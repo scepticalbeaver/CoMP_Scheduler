@@ -29,7 +29,7 @@ Simulator::Simulator()
 void Simulator::parseMacTraffic()
 {
   LOG("start parsing mac traffic...");
-  std::string location = "./input/DlRlcStats.txt";
+  std::string location = "./input/" + std::to_string(SimConfig::timeInterval) +  "/DlRlcStats.txt";
   std::fstream rlcStats;
   rlcStats.open(location, std::ios_base::in);
   assert(rlcStats.is_open());
@@ -51,8 +51,12 @@ void Simulator::parseMacTraffic()
        */
       double timeBegin; // seconds
       double timeEnd; // seconds
-      int cellId, imsi, rnti, lcid, nTxPdu, txBytes, nRxPdu,rxBytes;
+      int cellId, imsi, rnti, lcid, nTxPdu, txBytes, nRxPdu, rxBytes;
+
       stream >> timeBegin >> timeEnd >> cellId >> imsi >> rnti >> lcid >> nTxPdu >> txBytes >> nRxPdu >> rxBytes;
+      if (cellId > 3)
+        continue;
+
       Time timeUSec = static_cast<uint64_t>(round(timeBegin * 1000) * 1000);
 
 //      assert((nTxPdu == 1 || nTxPdu == 0) && (nRxPdu == 0 || nRxPdu == 1));
@@ -74,7 +78,7 @@ void Simulator::parseMacTraffic()
 void Simulator::parseMeasurements()
 {
   LOG("start parsing measurements...");
-  std::string location = "./input/measurements.log";
+  std::string location = "./input/" + std::to_string(SimConfig::timeInterval) +  "/measurements.log";
   std::fstream measurements;
   measurements.open(location, std::ios_base::in);
   assert(measurements.is_open());
@@ -95,6 +99,8 @@ void Simulator::parseMeasurements()
       Time timeUSec;
       int sCellId, tCellId, rsrp;
       stream >> timeUSec >> sCellId >> tCellId >> rsrp;
+      if (sCellId > 3 || tCellId > 3)
+        continue;
 
       CSIMeasurementReport report;
       report.targetCellId = tCellId;

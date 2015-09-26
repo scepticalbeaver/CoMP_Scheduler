@@ -4,9 +4,9 @@
 #include <algorithm>
 
 KamaIndicator::KamaIndicator(CsiJournalPtr j)
-  : ITrendIndicator(j)
+  : ITrendIndicator("kama-ind", j)
 {
-    mWindowSize = std::max(n, s + 1); // at start
+    mWindowSize = std::max(n, s) + 1; // at start
 }
 
 
@@ -58,7 +58,7 @@ void KamaIndicator::updateFilter(CellId cellId)
         return init + std::pow(val - expectedValue, 2);
       }));
 
-  const double magicK = 0.2;
+  const double magicK = 0.5;
   mLatestFilter = magicK * stdDev;
 }
 
@@ -77,7 +77,9 @@ double KamaIndicator::minmaxAmaLatest(CellId cellId, bool useMin)
   const auto &array = mWeightedSignals[cellId];
   const auto &deltaArray = mWValuesDiffs[cellId];
   const auto size = array.size();
-  const auto dsize = deltaArray.size();
+  const int64_t dsize = deltaArray.size();
+  if (!size)
+    return 0.0;
 
   auto left = std::max(int64_t(size) - s, int64_t(0));
   auto dleft = std::max(int64_t(dsize) - s + 1, int64_t(0));
@@ -95,7 +97,7 @@ double KamaIndicator::minmaxAmaLatest(CellId cellId, bool useMin)
     compAfterZero = std::less<double>();
 
   size_t offset = 0;
-  for (size_t i = dleft; i < dsize - 1; i++)
+  for (int64_t i = dleft; i < dsize - 1; i++)
     {
       if (compBeforeZero(deltaArray[i], 0.0) && compAfterZero(deltaArray[i + 1], 0.0))
         offset = i - dleft;

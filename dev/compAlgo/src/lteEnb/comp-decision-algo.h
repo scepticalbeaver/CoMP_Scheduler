@@ -6,6 +6,7 @@
 #include "trendIndicators/wma-indicator.h"
 #include "trendIndicators/kama-indicator.h"
 #include "trendIndicators/interpolation-indicator.h"
+#include "trendIndicators/approximation-indicator.h"
 
 
 class CompSchedulingAlgo
@@ -22,34 +23,39 @@ public:
   CellId redefineBestCell(CellId lastScheduled);
 
 private:
-    CompSchedulingAlgo& operator=(const CompSchedulingAlgo&) = delete;
-    CompSchedulingAlgo(const CompSchedulingAlgo&) = delete;
+  CompSchedulingAlgo& operator=(const CompSchedulingAlgo&) = delete;
+  CompSchedulingAlgo(const CompSchedulingAlgo&) = delete;
 
-    CsiJournalPtr mCsiJournal;
-    CellIdVectorPtr mCompGroup;
-    std::fstream mMovingScoreLogger;
+  CsiJournalPtr mCsiJournal;
+  CellIdVectorPtr mCompGroup;
+  std::fstream mMovingScoreLogger;
 
-    UniqWmaIndicator mWmaIndicator;
-    UniqKamaIndicator mKamaIndicator;
-    UniqInterpolationIndicator mInterpolation;
+  UniqWmaIndicator mWmaIndicator;
+  UniqKamaIndicator mKamaIndicator;
+  UniqInterpolationIndicator mInterpolation;
+  UniqApproximationIndicator mApproxIndicator;
 
 
+  void writeScore(CellId cellId, double aveValue, double rawValue);
+  void removeOldValues();
 
-    void writeScore(CellId cellId, double aveValue, double rawValue);
-    void removeOldValues();
+  bool haveTooLittleValues();
 
-    bool haveTooLittleValues();
+  CellId predictorPureRawForecastWMA(CellId lastScheduled);
+  CellId predictorPureRawForecastKama(CellId lastScheduled);
 
-    CellId predictorPureRawForecast(CellId lastScheduled);
+  CellId predictorMAForecast(CellId lastScheduled);
 
-    CellId predictorWeightedForecast(CellId lastScheduled);
+  CellId predictorWeightedForecast(CellId lastScheduled);
 
-    CellId predictorInterpolationForecast(CellId lastScheduled);
+  CellId predictorInterpolationForecast(CellId lastScheduled);
 
-    CellId predictorSimpleMaxValue(CellId lastScheduled);
+  CellId predictorApproximationForecast(CellId lastScheduled);
 
-    double weightedLastValue(CellId cellId);
-    double weightedForecast(CellId cellId);
+  CellId predictorSimpleMaxValue(CellId lastScheduled);
+
+  double weightedLastValue(CellId cellId);
+  double weightedForecast(CellId cellId);
 
 };
 

@@ -89,18 +89,19 @@ def plot_comp_ue_measures(may_rm_outliers=False):
 	if may_rm_outliers:
 		timing, measurement = reject_outliers(timing, measurement)
 
-	plt.plot(timing, measurement, 'k--', label='Ue', linewidth=3.1)
+	plt.plot(timing, measurement, 'k--', label='Ue', linewidth=3.9)
 
 
-def plot_as_is(xs, ys, lw_offset=2.0):
-	width_offset = 0.6
+def plot_as_is(xs, ys, lw_offset=2.5):
+	width_offset = 0.5
 	colors = { 1 : 'b', 2 : 'r', 3 : 'c', 11 : 'b--', 12 : 'r--', 13 : 'c--' }
+	names = { 1 : 'Cell 1', 2 : 'Cell 2', 3 : 'Cell 3', 11 : 'Cell 1a', 12 : 'Cell 2a', 13 : 'Cell 3a' }
 
 	for i in xs:
 		if len(xs[i]) == 0:
 			continue
-		plt.plot(xs[i], ys[i], colors[i], label='Cell ' + str(i), linewidth=lw_offset + width_offset)  # 'ro', 'b--'
-		width_offset -= .2
+		plt.plot(xs[i], ys[i], colors[i], label=names[i], linewidth=lw_offset + width_offset)  # 'ro', 'b--'
+		width_offset -= .4
 
 def smooth(xs, ys):
 	N = len(xs) * 3
@@ -113,6 +114,9 @@ def smooth(xs, ys):
 
 
 def main():
+	if "--nope" in sys.argv:
+		exit()
+
 	filepath = "compAlgo/input/measurements.log"
 	if "--scores" in sys.argv:
 		filepath = "compAlgo/output/moving_score.log"
@@ -151,18 +155,39 @@ def main():
 	xmin, xmax = find_bounds(timings)
 	xdelta = abs(float(xmin - xmax) / 30.0)
 
-	plt.ylim((mmin - ydelta, mmax + ydelta))
 	
-	plt.legend(loc=4)
+	plt.legend(loc=4, prop={'size': 22})
 	plt.grid(True)
-	plt.xlabel('Time [s]')
-	plt.ylabel('RSRP')
+	plt.xlabel('Time [s]', fontsize=18)
+	plt.ylabel('RSRP', fontsize=18)
 	plt.suptitle('CSI')
 
 	plt.xlim((1.15, 2.15))
-	plt.savefig("measurements_plot.png", dpi = 160)
+	plt.ylim((45, 70))
+	plt.savefig("measurements_plot.png", dpi = 200)
 
+	# plt.figure(figsize=(20,10))
+
+	plt.tight_layout()
+
+	plt.legend(loc=0)
+	plt.xlim((1.90, 2.15))
+	plt.ylim((52, 67.5))
+	plt.savefig("_viewPoint4.png", dpi = 200, bbox_inches='tight')
+
+	plt.legend(loc='lower right')
+	plt.xlim((2.5, 2.62))
+	plt.ylim((50, 70))
+	plt.savefig("_viewPoint5.png", dpi = 200, bbox_inches='tight')
+
+	plt.legend(loc=0)
+	plt.xlim((12.7, 13.05))
+	plt.ylim((52.3, 66.2))
+	plt.savefig("_viewPoint6.png", dpi = 200, bbox_inches='tight')
+
+	plt.legend(loc=0)
 	plt.xlim((xmin - xdelta, xmax + xdelta))
+	plt.ylim((mmin - ydelta, mmax + ydelta))
 	
 	if "--show" in sys.argv:
 		plt.show()

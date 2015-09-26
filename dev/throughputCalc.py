@@ -43,10 +43,17 @@ def processRlcStats(filename, start_time, ignor_ui_id = False):
 	print "DlThroughput (RLC) [Kbps]:"
 	print "Ue Id   Max (per {0:3} sec)   Average".format(epochDuration)
 	number_ues = 1 if ignor_ui_id else 3
+	throughput1 = 0.0
+	maxThroughput2 = 0.0
 	for i in range(number_ues):
 		aveThroughput = toThroughputKbps(totalBytesRx[i], totalDuration)
+		if ignor_ui_id:
+			throughput1 = aveThroughput
+			maxThroughput2 = maxThroughput[i]
 		print "{0:<8}{1:<20}{2:<16}".format(i + 1, maxThroughput[i], aveThroughput)
 	print ""
+
+	return throughput1, maxThroughput2
 
 
 #-------------------------------------------------------------------------------
@@ -135,10 +142,18 @@ def main():
 	start_time = float(sys.argv[2]) if argc > 2 and is_float(sys.argv[2]) else float("-NaN")
 
 
+	ave_thr = 0.0
+	max_thr = 0.0
 	if is_mac_stats:
 		processMacStats(full_path, start_time, ignore_imsi_str in sys.argv)
 	else:
-		processRlcStats(full_path, start_time, ignore_imsi_str in sys.argv)
+		ave_thr, max_thr = processRlcStats(full_path, start_time, ignore_imsi_str in sys.argv)
+	if (ave_thr > 0.1):
+		helper_log =  open("compAlgo/output/log.log")
+		aveTimeBwSwitches = round(float(helper_log.readline()), 2)
+		switches_count =  int(helper_log.readline())
+		print round(ave_thr, 2), "\t", round(max_thr,2), "\t", switches_count, "\t", aveTimeBwSwitches
+		helper_log.close()
 
 main()
 

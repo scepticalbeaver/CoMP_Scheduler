@@ -5,7 +5,8 @@
 class ITrendIndicator
 {
 public:
-  ITrendIndicator(CsiJournalPtr j);
+  ITrendIndicator(const std::string &id, CsiJournalPtr j);
+  virtual ~ITrendIndicator();
 
   void setJournal(CsiJournalPtr j) { mCsiJournal = j; }
   void setPreventiveAnalysis(bool value) { mApplyAnalysOnForecast = value; }
@@ -31,6 +32,8 @@ public:
 
 protected:
   const double crossHysteresis = 0.2;
+  const Time measuremetnsInterval = Converter::milliseconds(SimConfig::timeInterval);
+
   CsiJournalPtr mCsiJournal;
   bool mApplyAnalysOnForecast = false;
   bool mIsShadowValueUsed = false;
@@ -52,6 +55,12 @@ protected:
   void updateWeightedJournal(CellId cellId, double value);
   void updateSignalDiffs(CellId cellId);
   void updateWeightedValuesDiffs(CellId cellId);
+  void updateErrorStatistics(double newVal, CellId cellId);
+  int64_t lPointerCsiFromWindowSize(CellId cellId);
 
+private:
+  double mLastPrediction = 0;
+  Statistics<double> mErrorStats;
+  std::string mIdentity;
 };
 

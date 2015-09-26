@@ -12,7 +12,7 @@ public:
 
   };
 
-  WmaIndicator(CsiJournalPtr j, MovingAverageAlgo type = weightedMovingAverage);
+  WmaIndicator(CsiJournalPtr j);
 
   bool isLastOutlier(CellId cellId, size_t lPointer = 0);
 

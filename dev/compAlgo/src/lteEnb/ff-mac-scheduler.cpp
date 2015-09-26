@@ -43,10 +43,14 @@ FfMacScheduler::~FfMacScheduler()
       LOG("MAC scheduler cell-switch statistics:");
       LOG("\tIntervals between switch [ms]:");
 
-      LOG("\tave: " << mlCellSwitchWatch.average(mlCellSwitchIndex) / 1000.0
+      const double averageCellSwitchI = mlCellSwitchWatch.average(mlCellSwitchIndex) / 1000.0;
+
+      LOG("\tave: " << averageCellSwitchI
           << "\tmin: "<< mlCellSwitchWatch.minimum(mlCellSwitchIndex) / 1000.0
           << "\tmax: " << mlCellSwitchWatch.maximum(mlCellSwitchIndex) / 1000.0
           << "\tTotal switches: " << mlCellSwitchCounter);
+      FileLogger::write(averageCellSwitchI);
+      FileLogger::write(mlCellSwitchCounter);
 
 
       LOG("\tCell measurements history length on decision moment:\n\taverage per cell:");

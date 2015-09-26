@@ -1,9 +1,20 @@
 #include "itrend-indicator.h"
 
 
-ITrendIndicator::ITrendIndicator(CsiJournalPtr j)
+ITrendIndicator::ITrendIndicator(const std::string &id, CsiJournalPtr j)
   : mCsiJournal(j)
+  , mIdentity(id)
 {
+  assert(id.size() > 0);
+}
+
+ITrendIndicator::~ITrendIndicator()
+{
+  CellId cellId = 1; //any
+  if (mSignalDiffs[cellId].size())
+    {
+      DEBUG(mIdentity << "\t average error:\t" << mErrorStats.average(mIdentity));
+    }
 }
 
 void ITrendIndicator::update(CellId cellId)
@@ -23,6 +34,7 @@ void ITrendIndicator::update(CellId cellId)
   auto value = updateHook(cellId);
   updateWeightedJournal(cellId, value);
   updateWeightedValuesDiffs(cellId);
+  updateErrorStatistics(value, cellId);
 
   if (mApplyAnalysOnForecast)
     {
@@ -124,12 +136,12 @@ bool ITrendIndicator::isCurrentBreaksDescending(CellId cellId)
 
 Time ITrendIndicator::windowDuration() const
 {
-  return mWindowDuration? mWindowDuration : mWindowSize * Converter::milliseconds(5) + 1;
+  return mWindowDuration? mWindowDuration : mWindowSize * measuremetnsInterval + 1;
 }
 
 size_t ITrendIndicator::windowSize() const
 {
-  return mWindowSize ? mWindowSize : mWindowDuration / Converter::milliseconds(5) + 1;
+  return mWindowSize ? mWindowSize : mWindowDuration / measuremetnsInterval + 1;
 }
 
 bool ITrendIndicator::isUpgoingTrendWeighted(CellId cellId, std::function<bool (double, double)> f, double hysteresis)
@@ -154,7 +166,7 @@ void ITrendIndicator::updateWeightedJournal(CellId cellId, double value)
 
   assert(mWindowDuration || mWindowSize);
   if (mWindowDuration)
-    mWindowSize = mWindowDuration / Converter::milliseconds(5) + 1;
+    mWindowSize = mWindowDuration / measuremetnsInterval + 1;
 
   while (deque.size() > mWindowSize)
     {
@@ -185,5 +197,28 @@ void ITrendIndicator::updateWeightedValuesDiffs(CellId cellId)
     }
 
   mWValuesDiffs[cellId].push_back(array[size - 1] - array[size - 2]);
+}
+
+void ITrendIndicator::updateErrorStatistics(double newVal, CellId cellId)
+{
+  if (!mLastPrediction)
+    {
+      mLastPrediction = newVal;
+      return;
+    }
+
+  auto realValue = mCsiJournal->at(cellId).back().second;
+  mErrorStats.add(mIdentity, abs(realValue - mLastPrediction));
+
+  mLastPrediction = newVal;
+}
+
+int64_t ITrendIndicator::lPointerCsiFromWindowSize(CellId cellId)
+{
+  CsiArray &data = mCsiJournal->at(cellId);
+  const int64_t dataSize = data.size();
+
+  assert(dataSize);
+  return std::max(int64_t(dataSize - mWindowSize), int64_t(0));
 }
 

@@ -1,10 +1,10 @@
 #include "interpolation-indicator.h"
 
 InterpolationIndicator::InterpolationIndicator(CsiJournalPtr j, Method type)
-  : ITrendIndicator(j)
+  : ITrendIndicator("interpolation-ind", j)
   , mInterpolationType(type)
 {
-  mWindowSize = 3;
+  mWindowSize = SimConfig::approxAlgoWindowSize;
 }
 
 double InterpolationIndicator::updateHook(CellId cellId)
@@ -25,7 +25,7 @@ double InterpolationIndicator::forecastLagrange(CellId cellId)
   if (dataSize > 2)
     x = 0.5 * (x + data[dataSize - 2].first - data[dataSize - 3].first);
 
-  x = data.back().first + 500;
+  x = data.back().first + SimConfig::approxAlgoXOffset;
 
   double result = 0.0;
   for (auto j = left; j < dataSize; j++)

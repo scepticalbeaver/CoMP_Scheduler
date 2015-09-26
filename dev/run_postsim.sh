@@ -3,21 +3,23 @@
 
 clear
 rm -f compAlgo/output/*
-cp testsDir/build/debug/bin/DlRlcStats.txt compAlgo/input/.
-cp testsDir/build/debug/bin/measurements.log compAlgo/input/.
+cp testsDir/build/DlRlcStats.txt compAlgo/input/.
+cp testsDir/build/measurements.log compAlgo/input/.
 
-gnuplot -p testsDir/build/debug/bin/enbs.txt testsDir/build/debug/bin/ues.txt  remPlotScript.p
-echo "Radio environment plot done. See 'SceneX.png'"
+if [ -z "$1" ]
+then
+	gnuplot -p testsDir/build/enbs.txt testsDir/build/ues.txt  remPlotScript.p	
+	echo "Radio environment plot done. See 'SceneX.png'"
+fi
+
 
 cd compAlgo
 echo "Compiling CoMP simulation app"
 qmake DEFINES+="NDEBUG" && make -j4 --quiet || exit 1
 echo "" && echo ""
 
-./build/release/bin/compAlgo || (echo "Simulation failed" && exit 1)
-make --quiet clean
+./build/release/bin/compAlgo || (echo "Simulation failed" && exit)
 cd ..
-echo "Simulation finished"
 
 echo ""
 echo "Undetermined results:"
@@ -30,3 +32,8 @@ echo ""
 python plotRsrp.py --ue $1
 echo "Measurements plot done. See 'measurements_plot.png'"
 echo "Postprocessing finished"
+
+cd compAlgo
+make --quiet clean
+echo "Simulation finished"
+

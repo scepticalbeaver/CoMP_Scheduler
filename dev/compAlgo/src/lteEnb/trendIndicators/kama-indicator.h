@@ -16,9 +16,9 @@ public:
   bool isDescendingTrend(CellId cellId) override;
 
 private:
-  const int n = 10; // window size for efficincy ratio calculation
-  const int f = 2; // window for fast moving average
-  const int s = 5; // window for slow MA
+  const int n = SimConfig::kamaN; // window size for efficincy ratio calculation
+  const int f = SimConfig::kamaF; // window for fast moving average
+  const int s = SimConfig::kamaS; // window for slow MA
 
   double mLatestEfficiencyRatio = 1;
   double mLatestFilter = 0;

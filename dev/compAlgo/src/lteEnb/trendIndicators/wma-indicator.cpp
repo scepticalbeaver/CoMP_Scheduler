@@ -2,19 +2,19 @@
 
 #include <algorithm>
 
-WmaIndicator::WmaIndicator(CsiJournalPtr j, MovingAverageAlgo type)
-  : ITrendIndicator(j)
+WmaIndicator::WmaIndicator(CsiJournalPtr j)
+  : ITrendIndicator("wma-ind", j)
 {
-  switch (type)
+
+  switch (SimConfig::algoType)
     {
-    case MovingAverageAlgo::simpleMovingMedian:
+    case SimConfig::smmRaw:
       mCalcMaFunc = calcSMM;
       break;
-    case MovingAverageAlgo::weightedMovingAverage:
+    default:
       mCalcMaFunc = calcWMA;
-      break;
     }
-  mWindowDuration = Converter::milliseconds(16);
+  mWindowDuration = Converter::milliseconds(SimConfig::wmaSmmDuration);
 }
 
 

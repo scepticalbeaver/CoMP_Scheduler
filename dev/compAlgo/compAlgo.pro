@@ -6,6 +6,10 @@ CONFIG -= qt
 
 QMAKE_CXXFLAGS += -std=c++11
 
+LIBS += -lgsl
+LIBS += -lgslcblas
+LIBS += -lm
+
 CONFIG(debug, debug | release) {
 	CONFIGURATION = debug
 } else {
@@ -27,7 +31,8 @@ SOURCES += src/main.cpp \
     src/lteEnb/trendIndicators/kama-indicator.cpp \
     src/lteEnb/trendIndicators/itrend-indicator.cpp \
     src/lteEnb/comp-decision-algo.cpp \
-    src/lteEnb/trendIndicators/interpolation-indicator.cpp
+    src/lteEnb/trendIndicators/interpolation-indicator.cpp \
+    src/lteEnb/trendIndicators/approximation-indicator.cpp
 
 HEADERS += \
     src/helpers.h \
@@ -41,6 +46,7 @@ HEADERS += \
     src/lteEnb/trendIndicators/kama-indicator.h \
     src/lteEnb/trendIndicators/itrend-indicator.h \
     src/lteEnb/comp-decision-algo.h \
-    src/lteEnb/trendIndicators/interpolation-indicator.h
+    src/lteEnb/trendIndicators/interpolation-indicator.h \
+    src/lteEnb/trendIndicators/approximation-indicator.h
 
 
